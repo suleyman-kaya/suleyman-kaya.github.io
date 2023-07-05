@@ -1,0 +1,8 @@
+.e-container {
+    padding-right: max(calc((100% - var(--content-width)) / 2 + var(--padding-right)), var(--padding-right)) !important;
+    padding-left: max(calc((100% - var(--content-width)) / 2 + var(--padding-left)), var(--padding-left)) !important;
+}
+
+body .elementor-progress-wrapper{
+    height: auto;
+}
