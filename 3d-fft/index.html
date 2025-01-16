@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <title>3D Dalga Analizi</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/plotly.js/2.24.2/plotly.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .controls {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        .control-group {
+            padding: 10px;
+            background-color: #f8f9fa;
+            border-radius: 4px;
+        }
+        button {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        #plotDiv {
+            width: 100%;
+            height: 600px;
+            margin-top: 20px;
+        }
+        .loading {
+            display: none;
+            margin: 10px 0;
+            color: #666;
+        }
+        #progressBar {
+            width: 100%;
+            height: 20px;
+            background-color: #f0f0f0;
+            border-radius: 10px;
+            overflow: hidden;
+            display: none;
+        }
+        #progressFill {
+            width: 0%;
+            height: 100%;
+            background-color: #4CAF50;
+            transition: width 0.3s ease-in-out;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>3D Dalga Analizi</h1>
+        
+        <div class="controls">
+            <div class="control-group">
+                <h3>Dosya Yükleme</h3>
+                <input type="file" id="audioFile" accept=".wav" />
+            </div>
+            
+            <div class="control-group">
+                <h3>Analiz Parametreleri</h3>
+                <label>FFT Boyutu:</label>
+                <select id="fftSize">
+                    <option value="512">512</option>
+                    <option value="1024">1024</option>
+                    <option value="2048" selected>2048</option>
+                    <option value="4096">4096</option>
+                </select>
+            </div>
+            
+            <div class="control-group">
+                <h3>Eksen Seçimleri</h3>
+                <label>X Ekseni:</label>
+                <select id="xAxis">
+                    <option value="time">Zaman</option>
+                    <option value="frequency">Frekans</option>
+                    <option value="amplitude">Genlik</option>
+                </select>
+                
+                <label>Y Ekseni:</label>
+                <select id="yAxis">
+                    <option value="frequency">Frekans</option>
+                    <option value="time">Zaman</option>
+                    <option value="amplitude">Genlik</option>
+                </select>
+                
+                <label>Z Ekseni:</label>
+                <select id="zAxis">
+                    <option value="amplitude">Genlik</option>
+                    <option value="time">Zaman</option>
+                    <option value="frequency">Frekans</option>
+                </select>
+            </div>
+        </div>
+        
+        <button onclick="analyzeAudio()">Analiz Et</button>
+        <button onclick="downloadCSV()" id="downloadBtn" disabled>CSV İndir</button>
+        <div id="loading" class="loading">Analiz yapılıyor...</div>
+        <div id="progressBar">
+            <div id="progressFill"></div>
+        </div>
+        
+        <div id="plotDiv"></div>
+    </div>
+
+    <script>
+        let analysisResults = null;
+        let audioContext = null;
+
+        async function analyzeAudio() {
+            const fileInput = document.getElementById('audioFile');
+            const file = fileInput.files[0];
+            
+            if (!file) {
+                alert('Lütfen bir WAV dosyası seçin');
+                return;
+            }
+
+            try {
+                document.getElementById('loading').style.display = 'block';
+                document.getElementById('progressBar').style.display = 'block';
+                document.getElementById('downloadBtn').disabled = true;
+
+                // AudioContext'i oluştur
+                if (!audioContext) {
+                    audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                }
+
+                // Dosyayı oku
+                const arrayBuffer = await file.arrayBuffer();
+                const audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
+                
+                // Analiz node'unu oluştur
+                const analyzerNode = audioContext.createAnalyser();
+                analyzerNode.fftSize = parseInt(document.getElementById('fftSize').value);
+                
+                // Offline rendering için yeni bir context oluştur
+                const offlineContext = new OfflineAudioContext(
+                    1,
+                    audioBuffer.length,
+                    audioBuffer.sampleRate
+                );
+
+                // Kaynak node'unu oluştur
+                const sourceNode = offlineContext.createBufferSource();
+                sourceNode.buffer = audioBuffer;
+
+                // Analyzer node'unu offline context'te oluştur
+                const offlineAnalyzer = offlineContext.createAnalyser();
+                offlineAnalyzer.fftSize = analyzerNode.fftSize;
+                
+                sourceNode.connect(offlineAnalyzer);
+                offlineAnalyzer.connect(offlineContext.destination);
+
+                // Frekans ve zaman verilerini tutacak diziler
+                const frequencyData = new Float32Array(offlineAnalyzer.frequencyBinCount);
+                const timeData = new Float32Array(offlineAnalyzer.fftSize);
+                
+                // Sonuç dizileri
+                const timePoints = [];
+                const frequencies = new Array(offlineAnalyzer.frequencyBinCount);
+                const spectrogramData = [];
+
+                // Frekans dizisini hesapla
+                for (let i = 0; i < offlineAnalyzer.frequencyBinCount; i++) {
+                    frequencies[i] = i * audioBuffer.sampleRate / analyzerNode.fftSize;
+                }
+
+                // Her frame için veriyi topla
+                const frames = Math.floor(audioBuffer.length / (analyzerNode.fftSize / 2));
+                let currentFrame = 0;
+
+                sourceNode.start(0);
+                
+                // Offline render işlemi
+                offlineContext.startRendering().then(function(renderedBuffer) {
+                    // Time domain ve frequency domain verilerini topla
+                    const channelData = renderedBuffer.getChannelData(0);
+                    
+                    for (let i = 0; i < frames; i++) {
+                        const timeOffset = i * (analyzerNode.fftSize / 2);
+                        timePoints.push(timeOffset / audioBuffer.sampleRate);
+                        
+                        // Frame verilerini al
+                        const frame = channelData.slice(timeOffset, timeOffset + analyzerNode.fftSize);
+                        
+                        // FFT hesapla
+                        offlineAnalyzer.getFloatFrequencyData(frequencyData);
+                        
+                        // dB değerlerini normalize et
+                        const normalizedFreqData = Array.from(frequencyData).map(value => 
+                            Math.pow(10, value / 20)
+                        );
+                        
+                        spectrogramData.push(normalizedFreqData);
+                        
+                        // İlerlemeyi güncelle
+                        updateProgress((i + 1) / frames * 100);
+                    }
+                    
+                    // Sonuçları sakla
+                    analysisResults = {
+                        time: timePoints,
+                        frequency: frequencies,
+                        amplitude: spectrogramData
+                    };
+                    
+                    // Görselleştirmeyi güncelle
+                    updatePlot();
+                    document.getElementById('downloadBtn').disabled = false;
+                    document.getElementById('loading').style.display = 'none';
+                    document.getElementById('progressBar').style.display = 'none';
+                }).catch(function(err) {
+                    console.error('Render hatası:', err);
+                    alert('Ses analizi sırasında bir hata oluştu.');
+                });
+
+            } catch (error) {
+                console.error('Analiz hatası:', error);
+                alert('Dosya analizi sırasında bir hata oluştu.');
+                document.getElementById('loading').style.display = 'none';
+                document.getElementById('progressBar').style.display = 'none';
+            }
+        }
+
+        function updateProgress(percent) {
+            document.getElementById('progressFill').style.width = percent + '%';
+        }
+
+        function updatePlot() {
+            const xAxis = document.getElementById('xAxis').value;
+            const yAxis = document.getElementById('yAxis').value;
+            const zAxis = document.getElementById('zAxis').value;
+            
+            if (!analysisResults) return;
+            
+            const data = [{
+                type: 'surface',
+                x: getAxisData(xAxis),
+                y: getAxisData(yAxis),
+                z: getZMatrix(xAxis, yAxis, zAxis),
+                colorscale: 'Viridis',
+                contours: {
+                    z: {
+                        show: true,
+                        usecolormap: true,
+                        project: {z: true}
+                    }
+                }
+            }];
+            
+            const layout = {
+                title: '3D Dalga Analizi',
+                scene: {
+                    xaxis: {title: getAxisLabel(xAxis)},
+                    yaxis: {title: getAxisLabel(yAxis)},
+                    zaxis: {title: getAxisLabel(zAxis)},
+                    camera: {
+                        eye: {x: 1.5, y: 1.5, z: 1.2}
+                    }
+                },
+                margin: {l: 0, r: 0, b: 0, t: 40}
+            };
+            
+            const config = {
+                responsive: true,
+                scrollZoom: true
+            };
+            
+            Plotly.newPlot('plotDiv', data, layout, config);
+        }
+
+        function getAxisLabel(axis) {
+            const labels = {
+                time: 'Zaman (s)',
+                frequency: 'Frekans (Hz)',
+                amplitude: 'Genlik (dB)'
+            };
+            return labels[axis];
+        }
+
+        function getAxisData(axis) {
+            return analysisResults[axis];
+        }
+
+        function getZMatrix(xAxis, yAxis, zAxis) {
+            const xData = analysisResults[xAxis];
+            const yData = analysisResults[yAxis];
+            const zData = analysisResults[zAxis];
+            
+            const matrix = [];
+            for (let i = 0; i < yData.length; i++) {
+                const row = [];
+                for (let j = 0; j < xData.length; j++) {
+                    const value = zData[i]?.[j] || 0;
+                    row.push(value);
+                }
+                matrix.push(row);
+            }
+            return matrix;
+        }
+
+        function downloadCSV() {
+            if (!analysisResults) return;
+            
+            let csvContent = "Time (s),Frequency (Hz),Amplitude (dB)\n";
+            
+            for (let i = 0; i < analysisResults.time.length; i++) {
+                for (let j = 0; j < analysisResults.frequency.length; j++) {
+                    csvContent += `${analysisResults.time[i]},${analysisResults.frequency[j]},${analysisResults.amplitude[i][j]}\n`;
+                }
+            }
+            
+            const blob = new Blob([csvContent], { type: 'text/csv' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'wave_analysis.csv';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            window.URL.revokeObjectURL(url);
+        }
+
+        // Eksen değişikliklerini dinle
+        ['xAxis', 'yAxis', 'zAxis'].forEach(id => {
+            document.getElementById(id).addEventListener('change', updatePlot);
+        });
+    </script>
+</body>
+</html>
