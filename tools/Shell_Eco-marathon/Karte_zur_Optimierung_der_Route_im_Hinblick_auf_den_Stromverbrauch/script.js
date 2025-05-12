@@ -4,7 +4,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   if (apiKey) {
     const script = document.createElement('script');
-    script.src = `https://maps.googleapis.com/maps/api/js?key=AIzaSyDrx4pUqjFkVwIOkxBIALZ9f0kcxhO3e4w&callback=initMap`;
+    script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&callback=initMap`;
     script.async = true;
     script.defer = true;
     document.head.appendChild(script);
