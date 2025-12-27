@@ -82,13 +82,12 @@
     flex-wrap: nowrap;       /* keep patterns side-by-side */
     justify-content: flex-start;
     margin-bottom: 20px;
-    overflow-x: auto;        /* allow horizontal scroll on small screens */
+    overflow-x: auto;        /* horizontal scroll on small screens */
     padding-bottom: 6px;
   }
   
   .frame {
-    /* Make frame size exactly the 5x5 grid including padding/border */
-    width: calc(var(--cell) * 5 + 16px); /* 8px padding both sides */
+    width: calc(var(--cell) * 5 + 16px); /* includes padding */
     padding: 8px;
     background: #fff;
     border: var(--board-border);
@@ -121,6 +120,8 @@
     background: #f0f8ff;
   }
   
+  /* Each cell is the single source of layout for its content.
+     Content is centered with flexbox; glyphs scale with the cell size */
   .grid-cell {
     width: var(--cell);
     height: var(--cell);
@@ -128,57 +129,32 @@
     border: 1px solid #eee;
     position: relative;
     overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
   }
   
-  /* Shapes */
-  .shape {
-    position: absolute;
-    display: block;
-    box-sizing: border-box;
-    pointer-events: none;
+  /* Glyph styling: use a symbol font (fallbacks provided) */
+  .glyph {
+    display: inline-block;
+    font-family: "Segoe UI Symbol", "Noto Color Emoji", "Segoe UI", "Arial Unicode MS", sans-serif;
+    font-size: calc(var(--cell) * 0.62);
+    line-height: 1;
+    transform-origin: center center;
+    user-select: none;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
   }
-  
-  .square {
-    width: 70%;
-    height: 70%;
-    left: 15%;
-    top: 15%;
-    background: #ffcc66;
-    border: 3px solid #222;
-    border-radius: 4px;
-  }
-  
-  .triangle {
-    width: 0;
-    height: 0;
-    border-left: 18px solid transparent;
-    border-right: 18px solid transparent;
-    border-bottom: 32px solid #7bd389;
-    position: absolute;
-    left: calc(50% - 18px);
-    top: calc(50% - 16px);
-  }
-  
-  .circle {
-    width: 70%;
-    height: 70%;
-    left: 15%;
-    top: 15%;
-    background: #ff6666;
-    border: 3px solid #222;
-    border-radius: 50%;
-  }
-  
-  .hex {
-    width: 54%;
-    height: 54%;
-    left: 23%;
-    top: 23%;
-    background: #66aaff;
-    border: 3px solid #222;
-    clip-path: polygon(25% 0%, 75% 0%, 100% 50%, 75% 100%, 25% 100%, 0% 50%);
-  }
-  
+
+  /* Colors / visual identity per logical shape */
+  .glyph.square { color: #ffcc66; text-shadow: 0 0 0 #000; }   /* arrow */
+  .glyph.triangle { color: #7bd389; }                         /* triangle */
+  .glyph.circle { color: #ff6666; }                           /* heart */
+  .glyph.hex { color: #66aaff; }                              /* club/diamond */
+
+  /* Optional small stroke effect using text-stroke where supported */
+  .glyph { -webkit-text-stroke: 1px rgba(0,0,0,0.12); }
+
   /* Options */
   .sidebar {
     width: 320px;
@@ -189,7 +165,6 @@
   }
   
   .option {
-    /* Make options same grid-size as frames */
     width: calc(var(--cell) * 5 + 16px);
     height: calc(var(--cell) * 5 + 16px);
     border: 2px solid #ddd;
@@ -292,8 +267,6 @@
   
   <div class="container">
     <div class="sequence">
-      <!-- Legend removed as requested -->
-      
       <div class="frames" id="framesWrap"></div>
       <div class="meta"><span id="ruleText"></span></div>
       
@@ -334,6 +307,8 @@ function deepCopy(obj) {
 
 // Game constants
 const GRID = { w: 5, h: 5 };
+// Keep the old logical shape names so generators don't need changes.
+// We'll map these to glyphs for display.
 const SHAPES = ['square', 'triangle', 'circle', 'hex'];
 
 // Object comparison for answer checking
@@ -366,42 +341,56 @@ function eqObjects(a, b) {
   return true;
 }
 
-// Generate distractors for a single correct frame
+// Validate frame: not empty and has expected object count
+function isValidFrame(frame, expectedCount = null) {
+  if (!Array.isArray(frame) || frame.length === 0) return false;
+  const hasVisible = frame.some(o => o.visible !== false);
+  if (!hasVisible) return false;
+  if (expectedCount !== null && frame.length !== expectedCount) return false;
+  return true;
+}
+
+// Generate distractors for a single correct frame (preserves object count)
 function makeDistractorsForFrame(correctFrame, rng, max = 5) {
   const distractors = [];
-  const attempts = max * 6;
+  const attempts = max * 8;
   for (let i = 0; i < attempts && distractors.length < max; i++) {
     const variantFrame = deepCopy(correctFrame).map(obj => {
       const variant = { ...obj };
-      // Apply random modifications
-      const modType = Math.floor(rng() * 4);
+      // Apply random modifications but preserve presence of object
+      const modType = Math.floor(rng() * 5);
       switch (modType) {
         case 0: // Change position slightly
           variant.x = clamp(variant.x + choose([-1, 0, 1], rng), 0, GRID.w - 1);
           variant.y = clamp(variant.y + choose([-1, 0, 1], rng), 0, GRID.h - 1);
           break;
-        case 1: // Change shape
+        case 1: // Change shape (glyph)
           variant.shape = choose(SHAPES.filter(s => s !== variant.shape), rng);
           break;
         case 2: // Change rotation
           variant.rot = (variant.rot + 90 * (1 + Math.floor(rng() * 3))) % 360;
           break;
-        case 3: // Toggle visibility for one object
-          variant.visible = !variant.visible;
+        case 3: // Slight position move on one object only
+          if (rng() > 0.5) {
+            variant.x = clamp(variant.x + choose([-1, 1], rng), 0, GRID.w - 1);
+            variant.y = clamp(variant.y + choose([-1, 1], rng), 0, GRID.h - 1);
+          }
+          break;
+        case 4: // keep same (rare)
           break;
       }
       return variant;
     });
 
-    // Ensure not identical to correct and not duplicate in distractors
-    if (!eqObjects(variantFrame, correctFrame) && !distractors.some(d => eqObjects(d, variantFrame))) {
+    if (isValidFrame(variantFrame, correctFrame.length) && !eqObjects(variantFrame, correctFrame) &&
+        !distractors.some(d => eqObjects(d, variantFrame))) {
       distractors.push(variantFrame);
     }
   }
   return distractors;
 }
 
-// Level generators (unchanged logic except ensuring outputs are valid)
+// --- Level generators (unchanged logic from previous version) ---
 function genEasy(rng) {
   const shape = choose(SHAPES, rng);
   const startX = Math.floor(rng() * 3) + 1;
@@ -599,7 +588,6 @@ function genMedium(rng) {
       ruleText
     };
   } else {
-    // Fallback: create simple independent horizontal/vertical movements
     const dx1 = choose([-1, 1], rng);
     const dy2 = choose([-1, 1], rng);
     ruleText = `Fallback: ${shape1} yatay ${dx1 > 0 ? 'sağa' : 'sola'}, ${shape2} dikey ${dy2 > 0 ? 'aşağı' : 'yukarı'} hareket ediyor`;
@@ -860,16 +848,27 @@ function genVeryHard(rng) {
   };
 }
 
-// Rendering functions
+// Map logical shape names to glyph characters.
+// square -> arrow, triangle -> triangle, circle -> heart, hex -> club
+const SHAPE_GLYPHS = {
+  square: '➤',    // arrow-like - rotates visibly
+  triangle: '▲',
+  circle: '♥',
+  hex: '♣'
+};
+
+// Rendering glyphs instead of drawn shapes
 function renderShape(shape, rot = 0) {
-  const div = document.createElement('div');
-  div.className = `shape ${shape}`;
-  
+  const span = document.createElement('span');
+  span.className = `glyph ${shape}`;
+  span.textContent = SHAPE_GLYPHS[shape] || '?';
+  // Apply rotation (in degrees)
   if (rot !== 0) {
-    div.style.transform = `rotate(${rot}deg)`;
+    span.style.transform = `rotate(${rot}deg)`;
+  } else {
+    span.style.transform = '';
   }
-  
-  return div;
+  return span;
 }
 
 function createFrameGrid(objects) {
@@ -959,7 +958,7 @@ const optionsWrap = document.getElementById('optionsWrap');
 const ruleTextEl = document.getElementById('ruleText');
 const resultEl = document.getElementById('result');
 
-// Load new question
+// Load new question (ensuring uniqueness / validity of options)
 function loadNewQuestion() {
   const level = document.getElementById('difficulty').value;
   const seedVal = document.getElementById('seed').value;
@@ -983,61 +982,109 @@ function loadNewQuestion() {
       question = genEasy(rng);
   }
   
-  // Safety: ensure question has frames & correct
   if (!question || !question.frames || !question.correct || question.correct.length === 0) {
     question = genEasy(rng);
   }
   
-  // Build options ensuring ALL correct frames are present
+  // Build options ensuring uniqueness, none empty, and each correct frame appears exactly once
   const targetOptionsCount = 6;
   const options = [];
-  
-  // Start by adding each correct frame (deep copy)
-  question.correct.forEach(frame => {
-    options.push(deepCopy(frame));
+
+  // Add each correct frame once (if valid)
+  question.correct.forEach(correctFrame => {
+    if (isValidFrame(correctFrame) && !options.some(o => eqObjects(o, correctFrame))) {
+      options.push(deepCopy(correctFrame));
+    }
   });
 
-  // Fill with distractors generated from random correct frames until target reached
+  // Ensure we have at least one correct option (safety)
+  if (options.length === 0 && question.correct.length > 0 && isValidFrame(question.correct[0])) {
+    options.push(deepCopy(question.correct[0]));
+  }
+
+  // Fill with distractors while preserving object counts of the frames they are based on.
   let attempts = 0;
-  while (options.length < targetOptionsCount && attempts < 50) {
+  while (options.length < targetOptionsCount && attempts < 200) {
     attempts++;
-    const baseFrame = deepCopy(choose(question.correct, rng));
-    const distractors = makeDistractorsForFrame(baseFrame, rng, 3);
+    // base from a random correct frame (so distractor complexity matches difficulty)
+    const base = deepCopy(choose(question.correct, rng));
+    const expectedCount = base.length;
+    const distractors = makeDistractorsForFrame(base, rng, 3);
     for (const d of distractors) {
-      // ensure uniqueness
-      if (!options.some(o => eqObjects(o, d))) {
+      if (options.length >= targetOptionsCount) break;
+      // don't add duplicates and don't accidentally add a correct frame (should not equal any correct)
+      const equalsAnyCorrect = question.correct.some(cf => eqObjects(cf, d));
+      const equalsAnyOption = options.some(o => eqObjects(o, d));
+      if (!equalsAnyCorrect && !equalsAnyOption && isValidFrame(d, expectedCount)) {
         options.push(d);
-        if (options.length >= targetOptionsCount) break;
       }
     }
   }
 
-  // As a fallback if still not enough (rare), generate generic random variations
-  while (options.length < targetOptionsCount) {
-    const randomBase = deepCopy(choose(question.correct, rng));
-    // randomize positions
-    const rand = randomBase.map(obj => {
+  // Final fallback: create randomized variations that respect expected object count and are valid
+  attempts = 0;
+  while (options.length < targetOptionsCount && attempts < 200) {
+    attempts++;
+    const base = deepCopy(choose(question.correct, rng));
+    const expectedCount = base.length;
+    const rand = base.map(obj => {
       return {
         ...obj,
         x: clamp(obj.x + Math.floor(rng()*3)-1, 0, GRID.w-1),
         y: clamp(obj.y + Math.floor(rng()*3)-1, 0, GRID.h-1),
-        rot: (obj.rot || 0) + (90 * Math.floor(rng()*4))
+        rot: ((obj.rot || 0) + (90 * Math.floor(rng()*4))) % 360,
+        visible: (rng() > 0.1) ? true : (obj.visible === false ? false : true)
       };
     });
-    if (!options.some(o => eqObjects(o, rand))) options.push(rand);
+    const equalsAnyCorrect = question.correct.some(cf => eqObjects(cf, rand));
+    const equalsAnyOption = options.some(o => eqObjects(o, rand));
+    if (!equalsAnyCorrect && !equalsAnyOption && isValidFrame(rand, expectedCount)) {
+      options.push(rand);
+    }
+  }
+
+  // Ensure uniqueness
+  const uniqueOptions = [];
+  options.forEach(o => {
+    if (!uniqueOptions.some(u => eqObjects(u, o))) uniqueOptions.push(o);
+  });
+
+  // Ensure correct frames are present
+  question.correct.forEach(cf => {
+    if (!uniqueOptions.some(u => eqObjects(u, cf)) && isValidFrame(cf)) {
+      uniqueOptions.unshift(deepCopy(cf));
+    }
+  });
+
+  // Trim/pad to targetOptionsCount deterministically by cloning valid variations (rare)
+  attempts = 0;
+  while (uniqueOptions.length > targetOptionsCount) uniqueOptions.pop();
+  while (uniqueOptions.length < targetOptionsCount && attempts < 50) {
+    attempts++;
+    const base = deepCopy(choose(uniqueOptions, rng));
+    const candidate = base.map(obj => ({
+      ...obj,
+      x: clamp(obj.x + choose([-1, 0, 1], rng), 0, GRID.w-1),
+      y: clamp(obj.y + choose([-1, 0, 1], rng), 0, GRID.h-1),
+      rot: ((obj.rot || 0) + 90 * Math.floor(rng()*4)) % 360
+    }));
+    if (isValidFrame(candidate) && !uniqueOptions.some(u => eqObjects(u, candidate)) &&
+        !question.correct.some(cf => eqObjects(cf, candidate))) {
+      uniqueOptions.push(candidate);
+    }
   }
 
   // Shuffle options
-  for (let i = options.length - 1; i > 0; i--) {
+  for (let i = uniqueOptions.length - 1; i > 0; i--) {
     const j = Math.floor(rng() * (i + 1));
-    [options[i], options[j]] = [options[j], options[i]];
+    [uniqueOptions[i], uniqueOptions[j]] = [uniqueOptions[j], uniqueOptions[i]];
   }
-  
+
   currentState = {
     level,
     frames: question.frames,
     correct: question.correct,
-    options: options,
+    options: uniqueOptions,
     ruleText: question.ruleText,
     selectedOption: null,
     placedAnswers: new Array(question.correct.length).fill(null)
@@ -1047,16 +1094,15 @@ function loadNewQuestion() {
 }
 
 function renderQuestion() {
-  // Clear containers
   framesWrap.innerHTML = '';
   optionsWrap.innerHTML = '';
   
-  // Render frames (the known sequence frames)
+  // Render frames (sequence) side-by-side
   currentState.frames.forEach(frame => {
     framesWrap.appendChild(createFrameGrid(frame));
   });
   
-  // Render placeholders (one per expected correct frame) - these will appear inline with frames
+  // Render placeholders (inline)
   currentState.placedAnswers.forEach((_, index) => {
     framesWrap.appendChild(createPlaceholder(index));
   });
@@ -1066,10 +1112,7 @@ function renderQuestion() {
     optionsWrap.appendChild(createOptionGrid(option, index));
   });
   
-  // Update rule text
   ruleTextEl.textContent = currentState.ruleText;
-  
-  // Clear result
   resultEl.textContent = '';
   resultEl.style.color = '';
 }
@@ -1087,7 +1130,6 @@ function updatePlaceholders() {
     
     if (answer) {
       placeholder.innerHTML = '';
-      // append a frame inside placeholder; remove inner frame border for neatness
       const frm = createFrameGrid(answer);
       frm.style.border = 'none';
       frm.style.padding = '0';
