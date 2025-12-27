@@ -79,9 +79,11 @@
   .frames {
     display: flex;
     gap: 15px;
-    flex-wrap: wrap;
-    justify-content: center;
+    flex-wrap: nowrap;       /* keep patterns side-by-side */
+    justify-content: flex-start;
     margin-bottom: 20px;
+    overflow-x: auto;        /* allow horizontal scroll on small screens */
+    padding-bottom: 6px;
   }
   
   .frame {
@@ -95,6 +97,7 @@
     grid-template-columns: repeat(5, var(--cell));
     grid-template-rows: repeat(5, var(--cell));
     box-sizing: border-box;
+    flex: 0 0 auto;
   }
   
   .placeholder {
@@ -110,6 +113,7 @@
     transition: border-color 0.2s;
     box-sizing: border-box;
     padding: 8px;
+    flex: 0 0 auto;
   }
   
   .placeholder:hover {
@@ -153,7 +157,6 @@
     position: absolute;
     left: calc(50% - 18px);
     top: calc(50% - 16px);
-    /* removed overriding border: none; to keep triangle borders */
   }
   
   .circle {
@@ -200,6 +203,7 @@
     box-sizing: border-box;
     padding: 0;
     align-items: start;
+    flex: 0 0 auto;
   }
   
   .option:hover {
@@ -235,33 +239,6 @@
     background: #f8f9fa;
     border-radius: 5px;
   }
-  
-  .legend {
-    display: flex;
-    gap: 15px;
-    justify-content: center;
-    margin-bottom: 15px;
-    flex-wrap: wrap;
-  }
-  
-  .legend .item {
-    display: flex;
-    gap: 6px;
-    align-items: center;
-  }
-  
-  .legend .sw {
-    width: 20px;
-    height: 20px;
-    border-radius: 4px;
-    border: 2px solid #222;
-    display: inline-block;
-  }
-  
-  .sw.square { background: #ffcc66; }
-  .sw.triangle { background: #7bd389; clip-path: polygon(50% 0, 0% 100%, 100% 100%); border-radius: 0; }
-  .sw.circle { background: #ff6666; border-radius: 50%; }
-  .sw.hex { background: #66aaff; clip-path: polygon(25% 0%, 75% 0%, 100% 50%, 75% 100%, 25% 100%, 0% 50%); }
   
   footer {
     text-align: center;
@@ -315,12 +292,7 @@
   
   <div class="container">
     <div class="sequence">
-      <div class="legend">
-        <div class="item"><span class="sw square"></span> Kare</div>
-        <div class="item"><span class="sw triangle"></span> Üçgen</div>
-        <div class="item"><span class="sw circle"></span> Daire</div>
-        <div class="item"><span class="sw hex"></span> Altıgen</div>
-      </div>
+      <!-- Legend removed as requested -->
       
       <div class="frames" id="framesWrap"></div>
       <div class="meta"><span id="ruleText"></span></div>
@@ -394,13 +366,47 @@ function eqObjects(a, b) {
   return true;
 }
 
-// Level generators
+// Generate distractors for a single correct frame
+function makeDistractorsForFrame(correctFrame, rng, max = 5) {
+  const distractors = [];
+  const attempts = max * 6;
+  for (let i = 0; i < attempts && distractors.length < max; i++) {
+    const variantFrame = deepCopy(correctFrame).map(obj => {
+      const variant = { ...obj };
+      // Apply random modifications
+      const modType = Math.floor(rng() * 4);
+      switch (modType) {
+        case 0: // Change position slightly
+          variant.x = clamp(variant.x + choose([-1, 0, 1], rng), 0, GRID.w - 1);
+          variant.y = clamp(variant.y + choose([-1, 0, 1], rng), 0, GRID.h - 1);
+          break;
+        case 1: // Change shape
+          variant.shape = choose(SHAPES.filter(s => s !== variant.shape), rng);
+          break;
+        case 2: // Change rotation
+          variant.rot = (variant.rot + 90 * (1 + Math.floor(rng() * 3))) % 360;
+          break;
+        case 3: // Toggle visibility for one object
+          variant.visible = !variant.visible;
+          break;
+      }
+      return variant;
+    });
+
+    // Ensure not identical to correct and not duplicate in distractors
+    if (!eqObjects(variantFrame, correctFrame) && !distractors.some(d => eqObjects(d, variantFrame))) {
+      distractors.push(variantFrame);
+    }
+  }
+  return distractors;
+}
+
+// Level generators (unchanged logic except ensuring outputs are valid)
 function genEasy(rng) {
   const shape = choose(SHAPES, rng);
   const startX = Math.floor(rng() * 3) + 1;
   const startY = Math.floor(rng() * 3) + 1;
   
-  // Choose movement pattern (only implemented patterns)
   const pattern = choose(['horizontal', 'vertical', 'diagonal', 'circular'], rng);
   let frames = [];
   let ruleText = '';
@@ -460,7 +466,6 @@ function genEasy(rng) {
       ruleText
     };
   } else if (pattern === 'diagonal') {
-    // Move diagonally with dx,dy in {-1,1}
     const dx = choose([-1, 1], rng);
     const dy = choose([-1, 1], rng);
     ruleText = `${shape} her adımda diagonal olarak (${dx}, ${dy}) yönünde hareket ediyor`;
@@ -489,7 +494,6 @@ function genEasy(rng) {
       ruleText
     };
   } else { // circular
-    // Move in a small clockwise loop around starting cell
     const path = [
       {dx: 1, dy: 0},
       {dx: 0, dy: 1},
@@ -512,7 +516,6 @@ function genEasy(rng) {
         visible: true
       }]);
     }
-    // next position after loop
     const nextStep = path[0];
     const nx = clamp(x + nextStep.dx, 0, GRID.w - 1);
     const ny = clamp(y + nextStep.dy, 0, GRID.h - 1);
@@ -541,7 +544,6 @@ function genMedium(rng) {
   const pattern1 = choose(['move', 'rotate'], rng);
   const pattern2 = choose(['move', 'color'], rng);
   
-  // For simplicity: if both move -> movement vectors; otherwise fallback to move-move
   let frames = [];
   let ruleText = '';
   
@@ -652,18 +654,15 @@ function genHard(rng) {
   const shape1 = 'square';
   const shape2 = 'triangle';
   
-  // Complex pattern: rotation around center + movement
   let frames = [];
   const center = { x: 2, y: 2 };
   
-  // Start positions
   let pos1 = { x: 0, y: 0 };
   let pos2 = { x: 4, y: 4 };
   
   const ruleText = "Şekiller merkez etrafında 90° dönüyor ve kare ek olarak sağa kayıyor";
   
   for (let step = 0; step < 4; step++) {
-    // Rotate positions around center
     const rotatePoint = (p) => {
       const relX = p.x - center.x;
       const relY = p.y - center.y;
@@ -676,7 +675,6 @@ function genHard(rng) {
     const rotated1 = rotatePoint(pos1);
     const rotated2 = rotatePoint(pos2);
     
-    // Move square right by 1
     const final1 = {
       x: clamp(Math.round(rotated1.x) + 1, 0, GRID.w - 1),
       y: clamp(Math.round(rotated1.y), 0, GRID.h - 1)
@@ -701,12 +699,10 @@ function genHard(rng) {
       }
     ]);
     
-    // Update for next iteration
     pos1 = { x: final1.x, y: final1.y };
     pos2 = { x: Math.round(rotated2.x), y: Math.round(rotated2.y) };
   }
   
-  // Calculate next two frames
   const nextFrames = [];
   for (let step = 0; step < 2; step++) {
     const rotatePoint = (p) => {
@@ -757,7 +753,6 @@ function genHard(rng) {
 }
 
 function genVeryHard(rng) {
-  // Conditional behavior with bouncing and visibility toggling
   let frames = [];
   
   const startA = { x: 1, y: 1, dx: 1, dy: 0 };
@@ -770,7 +765,6 @@ function genVeryHard(rng) {
   const ruleText = "Kare kenarlardan sekerek hareket ediyor. Üçgen ise kareyle aynı satırdaysa görünürlüğünü değiştiriyor";
   
   for (let step = 0; step < 4; step++) {
-    // Move A with bounce
     let nextX = posA.x + posA.dx;
     let nextY = posA.y + posA.dy;
     
@@ -786,12 +780,10 @@ function genVeryHard(rng) {
     posA.x = nextX;
     posA.y = nextY;
     
-    // B visibility toggles if same row as A
     if (posB.y === posA.y) {
       visibleB = !visibleB;
     }
     
-    // Move B slowly to the right
     if (step % 2 === 0) {
       posB.x = clamp(posB.x + 1, 0, GRID.w - 1);
     }
@@ -816,10 +808,8 @@ function genVeryHard(rng) {
     ]);
   }
   
-  // Calculate next two frames
   const nextFrames = [];
   for (let step = 0; step < 2; step++) {
-    // Move A with bounce
     let nextX = posA.x + posA.dx;
     let nextY = posA.y + posA.dy;
     
@@ -835,12 +825,10 @@ function genVeryHard(rng) {
     posA.x = nextX;
     posA.y = nextY;
     
-    // B visibility toggles if same row as A
     if (posB.y === posA.y) {
       visibleB = !visibleB;
     }
     
-    // Move B
     if ((4 + step) % 2 === 0) {
       posB.x = clamp(posB.x + 1, 0, GRID.w - 1);
     }
@@ -870,42 +858,6 @@ function genVeryHard(rng) {
     correct: nextFrames,
     ruleText
   };
-}
-
-// Generate distractors for wrong answers
-function makeDistractors(correct, rng) {
-  const distractors = [];
-  const correctFrame = correct[0];
-  
-  for (let i = 0; i < 10 && distractors.length < 5; i++) {
-    const distractor = deepCopy(correctFrame).map(obj => {
-      const variant = { ...obj };
-      
-      // Apply random modifications
-      const modType = Math.floor(rng() * 3);
-      switch (modType) {
-        case 0: // Change position
-          variant.x = clamp(variant.x + choose([-1, 1], rng), 0, GRID.w - 1);
-          variant.y = clamp(variant.y + choose([-1, 1], rng), 0, GRID.h - 1);
-          break;
-        case 1: // Change shape
-          variant.shape = choose(SHAPES.filter(s => s !== variant.shape), rng);
-          break;
-        case 2: // Change rotation
-          variant.rot = (variant.rot + 90) % 360;
-          break;
-      }
-      
-      return variant;
-    });
-    
-    // Ensure it's not the same as correct
-    if (!eqObjects(distractor, correctFrame)) {
-      distractors.push(distractor);
-    }
-  }
-  
-  return distractors.slice(0, 5); // Ensure up to 5 distractors
 }
 
 // Rendering functions
@@ -1032,25 +984,60 @@ function loadNewQuestion() {
   }
   
   // Safety: ensure question has frames & correct
-  if (!question || !question.frames || !question.correct) {
+  if (!question || !question.frames || !question.correct || question.correct.length === 0) {
     question = genEasy(rng);
   }
   
-  // Create options (correct + distractors)
-  const distractors = makeDistractors(question.correct, rng);
-  const allOptions = [deepCopy(question.correct[0]), ...distractors];
+  // Build options ensuring ALL correct frames are present
+  const targetOptionsCount = 6;
+  const options = [];
   
+  // Start by adding each correct frame (deep copy)
+  question.correct.forEach(frame => {
+    options.push(deepCopy(frame));
+  });
+
+  // Fill with distractors generated from random correct frames until target reached
+  let attempts = 0;
+  while (options.length < targetOptionsCount && attempts < 50) {
+    attempts++;
+    const baseFrame = deepCopy(choose(question.correct, rng));
+    const distractors = makeDistractorsForFrame(baseFrame, rng, 3);
+    for (const d of distractors) {
+      // ensure uniqueness
+      if (!options.some(o => eqObjects(o, d))) {
+        options.push(d);
+        if (options.length >= targetOptionsCount) break;
+      }
+    }
+  }
+
+  // As a fallback if still not enough (rare), generate generic random variations
+  while (options.length < targetOptionsCount) {
+    const randomBase = deepCopy(choose(question.correct, rng));
+    // randomize positions
+    const rand = randomBase.map(obj => {
+      return {
+        ...obj,
+        x: clamp(obj.x + Math.floor(rng()*3)-1, 0, GRID.w-1),
+        y: clamp(obj.y + Math.floor(rng()*3)-1, 0, GRID.h-1),
+        rot: (obj.rot || 0) + (90 * Math.floor(rng()*4))
+      };
+    });
+    if (!options.some(o => eqObjects(o, rand))) options.push(rand);
+  }
+
   // Shuffle options
-  for (let i = allOptions.length - 1; i > 0; i--) {
+  for (let i = options.length - 1; i > 0; i--) {
     const j = Math.floor(rng() * (i + 1));
-    [allOptions[i], allOptions[j]] = [allOptions[j], allOptions[i]];
+    [options[i], options[j]] = [options[j], options[i]];
   }
   
   currentState = {
     level,
     frames: question.frames,
     correct: question.correct,
-    options: allOptions,
+    options: options,
     ruleText: question.ruleText,
     selectedOption: null,
     placedAnswers: new Array(question.correct.length).fill(null)
@@ -1064,12 +1051,12 @@ function renderQuestion() {
   framesWrap.innerHTML = '';
   optionsWrap.innerHTML = '';
   
-  // Render frames
+  // Render frames (the known sequence frames)
   currentState.frames.forEach(frame => {
     framesWrap.appendChild(createFrameGrid(frame));
   });
   
-  // Render placeholders (one per expected correct frame)
+  // Render placeholders (one per expected correct frame) - these will appear inline with frames
   currentState.placedAnswers.forEach((_, index) => {
     framesWrap.appendChild(createPlaceholder(index));
   });
@@ -1100,9 +1087,8 @@ function updatePlaceholders() {
     
     if (answer) {
       placeholder.innerHTML = '';
-      // append a frame inside placeholder; remove outer borders from the inner frame for neatness
+      // append a frame inside placeholder; remove inner frame border for neatness
       const frm = createFrameGrid(answer);
-      // make inner frame visually flush inside placeholder
       frm.style.border = 'none';
       frm.style.padding = '0';
       placeholder.appendChild(frm);
