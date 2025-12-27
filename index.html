@@ -90,6 +90,35 @@ const SIZE = 5;
 const SYMBOLS = ['A','B','C','D','E'];
 let solution, isHidden;
 let timerInterval, startTime;
+let elapsedTime = 0; // Zamanı saklamak için değişken
+
+/* ---------- Timer fonksiyonları ---------- */
+function startTimer() {
+  if (timerInterval) clearInterval(timerInterval);
+  startTime = Date.now() - elapsedTime;
+  timerInterval = setInterval(updateTimer, 1000);
+  updateTimer();
+}
+
+function updateTimer() {
+  const now = Date.now();
+  elapsedTime = now - startTime;
+  const seconds = Math.floor(elapsedTime / 1000);
+  timer.textContent = `⏱ ${seconds} s`;
+}
+
+function stopTimer() {
+  if (timerInterval) {
+    clearInterval(timerInterval);
+    timerInterval = null;
+  }
+}
+
+function resetTimer() {
+  stopTimer();
+  elapsedTime = 0;
+  timer.textContent = "⏱ 0 s";
+}
 
 /* ---------- Latin Square üretimi ---------- */
 function randPerm(n){
@@ -128,11 +157,9 @@ function generate(){
   }
   render();
 
-  if(timerInterval) clearInterval(timerInterval);
-  startTime=Date.now();
-  timerInterval=setInterval(()=>{
-    timer.textContent=`⏱ ${Math.floor((Date.now()-startTime)/1000)} s`;
-  },1000);
+  // Timer'ı sıfırla ve başlat
+  resetTimer();
+  startTimer();
 }
 
 /* ---------- Render ---------- */
@@ -160,6 +187,9 @@ function render(){
 
 /* ---------- Korrektur ---------- */
 function check(){
+  // Timer'ı durdur
+  stopTimer();
+  
   document.querySelectorAll('td').forEach(td=>{
     td.classList.remove('bad','ok');
   });
@@ -214,6 +244,12 @@ btnCheck.onclick = check;
 btnClear.onclick = () => {
   document.querySelectorAll('input.cell').forEach(i=>i.value='');
   document.querySelectorAll('td').forEach(td=>td.classList.remove('bad','ok'));
+  // Timer'ı sıfırla
+  resetTimer();
+  // Yeni oyun başlatılmadıysa timer'ı başlat
+  if (document.querySelectorAll('input.cell').length > 0) {
+    startTimer();
+  }
 };
 
 /* ---------- İlk yükleme ---------- */
