@@ -1,0 +1,1162 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="utf-8" />
+<title>Görsel Örüntü Tamamlama Oyunu</title>
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<style>
+  :root {
+    --cell: 44px;
+    --gap: 12px;
+    --accent: #0aa7ff;
+    --board-border: 3px solid #111;
+  }
+  
+  * { box-sizing: border-box; }
+
+  body {
+    font-family: "Segoe UI", Roboto, Arial, sans-serif;
+    background: #f6f6f6;
+    margin: 20px;
+    color: #111;
+    line-height: 1.5;
+  }
+  
+  h1 {
+    text-align: center;
+    margin-bottom: 6px;
+    color: #222;
+  }
+  
+  .top-bar {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+  }
+  
+  select, input[type=number] {
+    padding: 8px;
+    font-size: 14px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+  }
+  
+  button {
+    padding: 10px 14px;
+    font-size: 14px;
+    cursor: pointer;
+    background: var(--accent);
+    color: white;
+    border: 0;
+    border-radius: 4px;
+    transition: background 0.2s;
+  }
+  
+  button:hover {
+    background: #0088dd;
+  }
+  
+  .container {
+    display: flex;
+    gap: 30px;
+    align-items: flex-start;
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+  
+  /* Sequence area */
+  .sequence {
+    background: white;
+    padding: 20px;
+    border-radius: 10px;
+    box-shadow: 0 6px 18px rgba(0,0,0,0.08);
+    min-width: 300px;
+  }
+  
+  .frames {
+    display: flex;
+    gap: 15px;
+    flex-wrap: wrap;
+    justify-content: center;
+    margin-bottom: 20px;
+  }
+  
+  .frame {
+    /* Make frame size exactly the 5x5 grid including padding/border */
+    width: calc(var(--cell) * 5 + 16px); /* 8px padding both sides */
+    padding: 8px;
+    background: #fff;
+    border: var(--board-border);
+    border-radius: 6px;
+    display: grid;
+    grid-template-columns: repeat(5, var(--cell));
+    grid-template-rows: repeat(5, var(--cell));
+    box-sizing: border-box;
+  }
+  
+  .placeholder {
+    width: calc(var(--cell) * 5 + 16px);
+    height: calc(var(--cell) * 5 + 16px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 3px dashed #bbb;
+    background: #fafafa;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: border-color 0.2s;
+    box-sizing: border-box;
+    padding: 8px;
+  }
+  
+  .placeholder:hover {
+    border-color: var(--accent);
+    background: #f0f8ff;
+  }
+  
+  .grid-cell {
+    width: var(--cell);
+    height: var(--cell);
+    box-sizing: border-box;
+    border: 1px solid #eee;
+    position: relative;
+    overflow: hidden;
+  }
+  
+  /* Shapes */
+  .shape {
+    position: absolute;
+    display: block;
+    box-sizing: border-box;
+    pointer-events: none;
+  }
+  
+  .square {
+    width: 70%;
+    height: 70%;
+    left: 15%;
+    top: 15%;
+    background: #ffcc66;
+    border: 3px solid #222;
+    border-radius: 4px;
+  }
+  
+  .triangle {
+    width: 0;
+    height: 0;
+    border-left: 18px solid transparent;
+    border-right: 18px solid transparent;
+    border-bottom: 32px solid #7bd389;
+    position: absolute;
+    left: calc(50% - 18px);
+    top: calc(50% - 16px);
+    /* removed overriding border: none; to keep triangle borders */
+  }
+  
+  .circle {
+    width: 70%;
+    height: 70%;
+    left: 15%;
+    top: 15%;
+    background: #ff6666;
+    border: 3px solid #222;
+    border-radius: 50%;
+  }
+  
+  .hex {
+    width: 54%;
+    height: 54%;
+    left: 23%;
+    top: 23%;
+    background: #66aaff;
+    border: 3px solid #222;
+    clip-path: polygon(25% 0%, 75% 0%, 100% 50%, 75% 100%, 25% 100%, 0% 50%);
+  }
+  
+  /* Options */
+  .sidebar {
+    width: 320px;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    align-content: start;
+  }
+  
+  .option {
+    /* Make options same grid-size as frames */
+    width: calc(var(--cell) * 5 + 16px);
+    height: calc(var(--cell) * 5 + 16px);
+    border: 2px solid #ddd;
+    background: white;
+    display: grid;
+    grid-template-columns: repeat(5, var(--cell));
+    grid-template-rows: repeat(5, var(--cell));
+    cursor: pointer;
+    border-radius: 6px;
+    transition: transform 0.2s, box-shadow 0.2s;
+    box-sizing: border-box;
+    padding: 0;
+    align-items: start;
+  }
+  
+  .option:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+  }
+  
+  .option.selected {
+    outline: 4px solid rgba(0, 170, 255, 0.3);
+    border-color: var(--accent);
+    box-shadow: 0 6px 12px rgba(0,0,0,0.08);
+  }
+  
+  .controls-bottom {
+    margin-top: 20px;
+    text-align: center;
+  }
+  
+  #result {
+    margin-top: 15px;
+    padding: 10px;
+    border-radius: 5px;
+    font-weight: 600;
+    min-height: 24px;
+  }
+  
+  .meta {
+    font-size: 14px;
+    color: #444;
+    text-align: center;
+    margin: 10px 0;
+    padding: 10px;
+    background: #f8f9fa;
+    border-radius: 5px;
+  }
+  
+  .legend {
+    display: flex;
+    gap: 15px;
+    justify-content: center;
+    margin-bottom: 15px;
+    flex-wrap: wrap;
+  }
+  
+  .legend .item {
+    display: flex;
+    gap: 6px;
+    align-items: center;
+  }
+  
+  .legend .sw {
+    width: 20px;
+    height: 20px;
+    border-radius: 4px;
+    border: 2px solid #222;
+    display: inline-block;
+  }
+  
+  .sw.square { background: #ffcc66; }
+  .sw.triangle { background: #7bd389; clip-path: polygon(50% 0, 0% 100%, 100% 100%); border-radius: 0; }
+  .sw.circle { background: #ff6666; border-radius: 50%; }
+  .sw.hex { background: #66aaff; clip-path: polygon(25% 0%, 75% 0%, 100% 50%, 75% 100%, 25% 100%, 0% 50%); }
+  
+  footer {
+    text-align: center;
+    margin-top: 30px;
+    color: #666;
+    font-size: 13px;
+    padding-top: 15px;
+    border-top: 1px solid #eee;
+  }
+  
+  @media (max-width: 768px) {
+    .container {
+      flex-direction: column;
+      align-items: center;
+    }
+    
+    .sidebar {
+      width: 100%;
+      max-width: 300px;
+    }
+    
+    .option {
+      width: calc(var(--cell) * 5 + 12px);
+      height: calc(var(--cell) * 5 + 12px);
+    }
+
+    .frame, .placeholder {
+      width: calc(var(--cell) * 5 + 12px);
+      height: calc(var(--cell) * 5 + 12px);
+    }
+  }
+</style>
+</head>
+<body>
+  <h1>Görsel Örüntü Tamamlama Oyunu</h1>
+  
+  <div class="top-bar">
+    <label>Seviye:
+      <select id="difficulty">
+        <option value="easy">Basit</option>
+        <option value="medium">Orta</option>
+        <option value="hard">Zor</option>
+        <option value="veryhard">Çok Zor</option>
+      </select>
+    </label>
+    <label>Seed (opsiyonel):
+      <input id="seed" type="number" placeholder="123" min="1" max="999999" />
+    </label>
+    <button id="newBtn">Yeni Soru</button>
+  </div>
+  
+  <div class="container">
+    <div class="sequence">
+      <div class="legend">
+        <div class="item"><span class="sw square"></span> Kare</div>
+        <div class="item"><span class="sw triangle"></span> Üçgen</div>
+        <div class="item"><span class="sw circle"></span> Daire</div>
+        <div class="item"><span class="sw hex"></span> Altıgen</div>
+      </div>
+      
+      <div class="frames" id="framesWrap"></div>
+      <div class="meta"><span id="ruleText"></span></div>
+      
+      <div class="controls-bottom">
+        <button id="checkBtn">Cevabı Kontrol Et</button>
+        <button id="explainBtn" style="background: #666;">Açıkla</button>
+        <div id="result"></div>
+      </div>
+    </div>
+    
+    <div class="sidebar" id="optionsWrap"></div>
+  </div>
+  
+  <footer>Görsel örüntü tamamlama oyunu - Mantıksal akıl yürütme becerilerinizi test edin</footer>
+
+<script>
+// Utility functions
+function makeRng(seed) {
+  if (!seed) return Math.random;
+  let s = Number(seed) || 1;
+  return function() {
+    s = (s * 1664525 + 1013904223) | 0;
+    return (s >>> 0) / 4294967296;
+  };
+}
+
+function choose(arr, rng) {
+  return arr[Math.floor(rng() * arr.length)];
+}
+
+function clamp(v, min, max) {
+  return Math.max(min, Math.min(max, v));
+}
+
+function deepCopy(obj) {
+  return JSON.parse(JSON.stringify(obj));
+}
+
+// Game constants
+const GRID = { w: 5, h: 5 };
+const SHAPES = ['square', 'triangle', 'circle', 'hex'];
+
+// Object comparison for answer checking
+function normalizeObjects(objs) {
+  return objs.map(o => ({
+    shape: o.shape,
+    x: o.x,
+    y: o.y,
+    rot: o.rot || 0,
+    visible: o.visible !== false
+  })).sort((a, b) => {
+    if (a.shape !== b.shape) return a.shape.localeCompare(b.shape);
+    if (a.x !== b.x) return a.x - b.x;
+    return a.y - b.y;
+  });
+}
+
+function eqObjects(a, b) {
+  if (!a || !b || a.length !== b.length) return false;
+  const na = normalizeObjects(a);
+  const nb = normalizeObjects(b);
+  
+  for (let i = 0; i < na.length; i++) {
+    if (na[i].shape !== nb[i].shape) return false;
+    if (na[i].x !== nb[i].x) return false;
+    if (na[i].y !== nb[i].y) return false;
+    if ((na[i].rot || 0) !== (nb[i].rot || 0)) return false;
+    if (na[i].visible !== nb[i].visible) return false;
+  }
+  return true;
+}
+
+// Level generators
+function genEasy(rng) {
+  const shape = choose(SHAPES, rng);
+  const startX = Math.floor(rng() * 3) + 1;
+  const startY = Math.floor(rng() * 3) + 1;
+  
+  // Choose movement pattern (only implemented patterns)
+  const pattern = choose(['horizontal', 'vertical', 'diagonal', 'circular'], rng);
+  let frames = [];
+  let ruleText = '';
+  
+  if (pattern === 'horizontal') {
+    const dx = choose([-1, 1], rng);
+    ruleText = `${shape} her adımda yatay olarak ${dx > 0 ? 'sağa' : 'sola'} hareket ediyor`;
+    
+    for (let i = 0; i < 4; i++) {
+      frames.push([{
+        id: 'A',
+        shape: shape,
+        x: clamp(startX + i * dx, 0, GRID.w - 1),
+        y: startY,
+        rot: 0,
+        visible: true
+      }]);
+    }
+    
+    return {
+      frames,
+      correct: [[{
+        id: 'A',
+        shape: shape,
+        x: clamp(startX + 4 * dx, 0, GRID.w - 1),
+        y: startY,
+        rot: 0,
+        visible: true
+      }]],
+      ruleText
+    };
+  } else if (pattern === 'vertical') {
+    const dy = choose([-1, 1], rng);
+    ruleText = `${shape} her adımda dikey olarak ${dy > 0 ? 'aşağı' : 'yukarı'} hareket ediyor`;
+    
+    for (let i = 0; i < 4; i++) {
+      frames.push([{
+        id: 'A',
+        shape: shape,
+        x: startX,
+        y: clamp(startY + i * dy, 0, GRID.h - 1),
+        rot: 0,
+        visible: true
+      }]);
+    }
+    
+    return {
+      frames,
+      correct: [[{
+        id: 'A',
+        shape: shape,
+        x: startX,
+        y: clamp(startY + 4 * dy, 0, GRID.h - 1),
+        rot: 0,
+        visible: true
+      }]],
+      ruleText
+    };
+  } else if (pattern === 'diagonal') {
+    // Move diagonally with dx,dy in {-1,1}
+    const dx = choose([-1, 1], rng);
+    const dy = choose([-1, 1], rng);
+    ruleText = `${shape} her adımda diagonal olarak (${dx}, ${dy}) yönünde hareket ediyor`;
+    
+    for (let i = 0; i < 4; i++) {
+      frames.push([{
+        id: 'A',
+        shape: shape,
+        x: clamp(startX + i * dx, 0, GRID.w - 1),
+        y: clamp(startY + i * dy, 0, GRID.h - 1),
+        rot: 0,
+        visible: true
+      }]);
+    }
+    
+    return {
+      frames,
+      correct: [[{
+        id: 'A',
+        shape: shape,
+        x: clamp(startX + 4 * dx, 0, GRID.w - 1),
+        y: clamp(startY + 4 * dy, 0, GRID.h - 1),
+        rot: 0,
+        visible: true
+      }]],
+      ruleText
+    };
+  } else { // circular
+    // Move in a small clockwise loop around starting cell
+    const path = [
+      {dx: 1, dy: 0},
+      {dx: 0, dy: 1},
+      {dx: -1, dy: 0},
+      {dx: 0, dy: -1}
+    ];
+    let x = startX;
+    let y = startY;
+    ruleText = `${shape} saat yönünde bir döngü izliyor`;
+    for (let i = 0; i < 4; i++) {
+      const step = path[i % path.length];
+      x = clamp(x + step.dx, 0, GRID.w - 1);
+      y = clamp(y + step.dy, 0, GRID.h - 1);
+      frames.push([{
+        id: 'A',
+        shape: shape,
+        x,
+        y,
+        rot: 0,
+        visible: true
+      }]);
+    }
+    // next position after loop
+    const nextStep = path[0];
+    const nx = clamp(x + nextStep.dx, 0, GRID.w - 1);
+    const ny = clamp(y + nextStep.dy, 0, GRID.h - 1);
+    return {
+      frames,
+      correct: [[{
+        id: 'A',
+        shape: shape,
+        x: nx,
+        y: ny,
+        rot: 0,
+        visible: true
+      }]],
+      ruleText
+    };
+  }
+}
+
+function genMedium(rng) {
+  const shape1 = choose(SHAPES, rng);
+  const shape2 = choose(SHAPES.filter(s => s !== shape1), rng);
+  
+  const start1 = { x: 1, y: 1 };
+  const start2 = { x: 3, y: 3 };
+  
+  const pattern1 = choose(['move', 'rotate'], rng);
+  const pattern2 = choose(['move', 'color'], rng);
+  
+  // For simplicity: if both move -> movement vectors; otherwise fallback to move-move
+  let frames = [];
+  let ruleText = '';
+  
+  if (pattern1 === 'move' && pattern2 === 'move') {
+    const dx1 = choose([-1, 0, 1], rng);
+    const dy1 = choose([-1, 0, 1], rng);
+    const dx2 = choose([-1, 0, 1], rng);
+    const dy2 = choose([-1, 0, 1], rng);
+    
+    ruleText = `${shape1} (${dx1},${dy1}) ve ${shape2} (${dx2},${dy2}) vektörleriyle hareket ediyor`;
+    
+    for (let i = 0; i < 4; i++) {
+      frames.push([
+        {
+          id: 'A',
+          shape: shape1,
+          x: clamp(start1.x + i * dx1, 0, GRID.w - 1),
+          y: clamp(start1.y + i * dy1, 0, GRID.h - 1),
+          rot: 0,
+          visible: true
+        },
+        {
+          id: 'B',
+          shape: shape2,
+          x: clamp(start2.x + i * dx2, 0, GRID.w - 1),
+          y: clamp(start2.y + i * dy2, 0, GRID.h - 1),
+          rot: 0,
+          visible: true
+        }
+      ]);
+    }
+    
+    return {
+      frames,
+      correct: [[
+        {
+          id: 'A',
+          shape: shape1,
+          x: clamp(start1.x + 4 * dx1, 0, GRID.w - 1),
+          y: clamp(start1.y + 4 * dy1, 0, GRID.h - 1),
+          rot: 0,
+          visible: true
+        },
+        {
+          id: 'B',
+          shape: shape2,
+          x: clamp(start2.x + 4 * dx2, 0, GRID.w - 1),
+          y: clamp(start2.y + 4 * dy2, 0, GRID.h - 1),
+          rot: 0,
+          visible: true
+        }
+      ]],
+      ruleText
+    };
+  } else {
+    // Fallback: create simple independent horizontal/vertical movements
+    const dx1 = choose([-1, 1], rng);
+    const dy2 = choose([-1, 1], rng);
+    ruleText = `Fallback: ${shape1} yatay ${dx1 > 0 ? 'sağa' : 'sola'}, ${shape2} dikey ${dy2 > 0 ? 'aşağı' : 'yukarı'} hareket ediyor`;
+    
+    for (let i = 0; i < 4; i++) {
+      frames.push([
+        {
+          id: 'A',
+          shape: shape1,
+          x: clamp(start1.x + i * dx1, 0, GRID.w - 1),
+          y: start1.y,
+          rot: 0,
+          visible: true
+        },
+        {
+          id: 'B',
+          shape: shape2,
+          x: start2.x,
+          y: clamp(start2.y + i * dy2, 0, GRID.h - 1),
+          rot: 0,
+          visible: true
+        }
+      ]);
+    }
+    
+    return {
+      frames,
+      correct: [[
+        {
+          id: 'A',
+          shape: shape1,
+          x: clamp(start1.x + 4 * dx1, 0, GRID.w - 1),
+          y: start1.y,
+          rot: 0,
+          visible: true
+        },
+        {
+          id: 'B',
+          shape: shape2,
+          x: start2.x,
+          y: clamp(start2.y + 4 * dy2, 0, GRID.h - 1),
+          rot: 0,
+          visible: true
+        }
+      ]],
+      ruleText
+    };
+  }
+}
+
+function genHard(rng) {
+  const shape1 = 'square';
+  const shape2 = 'triangle';
+  
+  // Complex pattern: rotation around center + movement
+  let frames = [];
+  const center = { x: 2, y: 2 };
+  
+  // Start positions
+  let pos1 = { x: 0, y: 0 };
+  let pos2 = { x: 4, y: 4 };
+  
+  const ruleText = "Şekiller merkez etrafında 90° dönüyor ve kare ek olarak sağa kayıyor";
+  
+  for (let step = 0; step < 4; step++) {
+    // Rotate positions around center
+    const rotatePoint = (p) => {
+      const relX = p.x - center.x;
+      const relY = p.y - center.y;
+      return {
+        x: center.x - relY,
+        y: center.y + relX
+      };
+    };
+    
+    const rotated1 = rotatePoint(pos1);
+    const rotated2 = rotatePoint(pos2);
+    
+    // Move square right by 1
+    const final1 = {
+      x: clamp(Math.round(rotated1.x) + 1, 0, GRID.w - 1),
+      y: clamp(Math.round(rotated1.y), 0, GRID.h - 1)
+    };
+    
+    frames.push([
+      {
+        id: 'A',
+        shape: shape1,
+        x: final1.x,
+        y: final1.y,
+        rot: step * 90,
+        visible: true
+      },
+      {
+        id: 'B',
+        shape: shape2,
+        x: clamp(Math.round(rotated2.x), 0, GRID.w - 1),
+        y: clamp(Math.round(rotated2.y), 0, GRID.h - 1),
+        rot: step * 90,
+        visible: true
+      }
+    ]);
+    
+    // Update for next iteration
+    pos1 = { x: final1.x, y: final1.y };
+    pos2 = { x: Math.round(rotated2.x), y: Math.round(rotated2.y) };
+  }
+  
+  // Calculate next two frames
+  const nextFrames = [];
+  for (let step = 0; step < 2; step++) {
+    const rotatePoint = (p) => {
+      const relX = p.x - center.x;
+      const relY = p.y - center.y;
+      return {
+        x: center.x - relY,
+        y: center.y + relX
+      };
+    };
+    
+    const rotated1 = rotatePoint(pos1);
+    const rotated2 = rotatePoint(pos2);
+    
+    const final1 = {
+      x: clamp(Math.round(rotated1.x) + 1, 0, GRID.w - 1),
+      y: clamp(Math.round(rotated1.y), 0, GRID.h - 1)
+    };
+    
+    nextFrames.push([
+      {
+        id: 'A',
+        shape: shape1,
+        x: final1.x,
+        y: final1.y,
+        rot: (4 + step) * 90,
+        visible: true
+      },
+      {
+        id: 'B',
+        shape: shape2,
+        x: clamp(Math.round(rotated2.x), 0, GRID.w - 1),
+        y: clamp(Math.round(rotated2.y), 0, GRID.h - 1),
+        rot: (4 + step) * 90,
+        visible: true
+      }
+    ]);
+    
+    pos1 = { x: final1.x, y: final1.y };
+    pos2 = { x: Math.round(rotated2.x), y: Math.round(rotated2.y) };
+  }
+  
+  return {
+    frames,
+    correct: nextFrames,
+    ruleText
+  };
+}
+
+function genVeryHard(rng) {
+  // Conditional behavior with bouncing and visibility toggling
+  let frames = [];
+  
+  const startA = { x: 1, y: 1, dx: 1, dy: 0 };
+  const startB = { x: 3, y: 3 };
+  
+  let posA = { ...startA };
+  let posB = { ...startB };
+  let visibleB = true;
+  
+  const ruleText = "Kare kenarlardan sekerek hareket ediyor. Üçgen ise kareyle aynı satırdaysa görünürlüğünü değiştiriyor";
+  
+  for (let step = 0; step < 4; step++) {
+    // Move A with bounce
+    let nextX = posA.x + posA.dx;
+    let nextY = posA.y + posA.dy;
+    
+    if (nextX < 0 || nextX >= GRID.w) {
+      posA.dx *= -1;
+      nextX = clamp(posA.x + posA.dx, 0, GRID.w - 1);
+    }
+    if (nextY < 0 || nextY >= GRID.h) {
+      posA.dy *= -1;
+      nextY = clamp(posA.y + posA.dy, 0, GRID.h - 1);
+    }
+    
+    posA.x = nextX;
+    posA.y = nextY;
+    
+    // B visibility toggles if same row as A
+    if (posB.y === posA.y) {
+      visibleB = !visibleB;
+    }
+    
+    // Move B slowly to the right
+    if (step % 2 === 0) {
+      posB.x = clamp(posB.x + 1, 0, GRID.w - 1);
+    }
+    
+    frames.push([
+      {
+        id: 'A',
+        shape: 'square',
+        x: posA.x,
+        y: posA.y,
+        rot: 0,
+        visible: true
+      },
+      {
+        id: 'B',
+        shape: 'triangle',
+        x: posB.x,
+        y: posB.y,
+        rot: 0,
+        visible: visibleB
+      }
+    ]);
+  }
+  
+  // Calculate next two frames
+  const nextFrames = [];
+  for (let step = 0; step < 2; step++) {
+    // Move A with bounce
+    let nextX = posA.x + posA.dx;
+    let nextY = posA.y + posA.dy;
+    
+    if (nextX < 0 || nextX >= GRID.w) {
+      posA.dx *= -1;
+      nextX = clamp(posA.x + posA.dx, 0, GRID.w - 1);
+    }
+    if (nextY < 0 || nextY >= GRID.h) {
+      posA.dy *= -1;
+      nextY = clamp(posA.y + posA.dy, 0, GRID.h - 1);
+    }
+    
+    posA.x = nextX;
+    posA.y = nextY;
+    
+    // B visibility toggles if same row as A
+    if (posB.y === posA.y) {
+      visibleB = !visibleB;
+    }
+    
+    // Move B
+    if ((4 + step) % 2 === 0) {
+      posB.x = clamp(posB.x + 1, 0, GRID.w - 1);
+    }
+    
+    nextFrames.push([
+      {
+        id: 'A',
+        shape: 'square',
+        x: posA.x,
+        y: posA.y,
+        rot: 0,
+        visible: true
+      },
+      {
+        id: 'B',
+        shape: 'triangle',
+        x: posB.x,
+        y: posB.y,
+        rot: 0,
+        visible: visibleB
+      }
+    ]);
+  }
+  
+  return {
+    frames,
+    correct: nextFrames,
+    ruleText
+  };
+}
+
+// Generate distractors for wrong answers
+function makeDistractors(correct, rng) {
+  const distractors = [];
+  const correctFrame = correct[0];
+  
+  for (let i = 0; i < 10 && distractors.length < 5; i++) {
+    const distractor = deepCopy(correctFrame).map(obj => {
+      const variant = { ...obj };
+      
+      // Apply random modifications
+      const modType = Math.floor(rng() * 3);
+      switch (modType) {
+        case 0: // Change position
+          variant.x = clamp(variant.x + choose([-1, 1], rng), 0, GRID.w - 1);
+          variant.y = clamp(variant.y + choose([-1, 1], rng), 0, GRID.h - 1);
+          break;
+        case 1: // Change shape
+          variant.shape = choose(SHAPES.filter(s => s !== variant.shape), rng);
+          break;
+        case 2: // Change rotation
+          variant.rot = (variant.rot + 90) % 360;
+          break;
+      }
+      
+      return variant;
+    });
+    
+    // Ensure it's not the same as correct
+    if (!eqObjects(distractor, correctFrame)) {
+      distractors.push(distractor);
+    }
+  }
+  
+  return distractors.slice(0, 5); // Ensure up to 5 distractors
+}
+
+// Rendering functions
+function renderShape(shape, rot = 0) {
+  const div = document.createElement('div');
+  div.className = `shape ${shape}`;
+  
+  if (rot !== 0) {
+    div.style.transform = `rotate(${rot}deg)`;
+  }
+  
+  return div;
+}
+
+function createFrameGrid(objects) {
+  const container = document.createElement('div');
+  container.className = 'frame';
+  
+  for (let y = 0; y < GRID.h; y++) {
+    for (let x = 0; x < GRID.w; x++) {
+      const cell = document.createElement('div');
+      cell.className = 'grid-cell';
+      
+      objects.forEach(obj => {
+        if (obj.x === x && obj.y === y && obj.visible) {
+          cell.appendChild(renderShape(obj.shape, obj.rot));
+        }
+      });
+      
+      container.appendChild(cell);
+    }
+  }
+  
+  return container;
+}
+
+function createPlaceholder(index) {
+  const placeholder = document.createElement('div');
+  placeholder.className = 'placeholder';
+  placeholder.dataset.index = index;
+  placeholder.innerHTML = '<div style="font-size: 24px; color: #777;">?</div>';
+  
+  placeholder.addEventListener('click', () => {
+    if (currentState.selectedOption !== null) {
+      placeOptionInBlank(currentState.selectedOption, index);
+    }
+  });
+  
+  return placeholder;
+}
+
+function createOptionGrid(objects, index) {
+  const option = document.createElement('div');
+  option.className = 'option';
+  option.dataset.index = index;
+  
+  for (let y = 0; y < GRID.h; y++) {
+    for (let x = 0; x < GRID.w; x++) {
+      const cell = document.createElement('div');
+      cell.className = 'grid-cell';
+      
+      objects.forEach(obj => {
+        if (obj.x === x && obj.y === y && obj.visible) {
+          cell.appendChild(renderShape(obj.shape, obj.rot));
+        }
+      });
+      
+      option.appendChild(cell);
+    }
+  }
+  
+  option.addEventListener('click', () => {
+    // Remove selection from other options
+    document.querySelectorAll('.option').forEach(opt => {
+      opt.classList.remove('selected');
+    });
+    
+    option.classList.add('selected');
+    currentState.selectedOption = index;
+  });
+  
+  return option;
+}
+
+// Game state
+let currentState = {
+  level: 'easy',
+  frames: [],
+  correct: [],
+  options: [],
+  ruleText: '',
+  selectedOption: null,
+  placedAnswers: []
+};
+
+// DOM elements
+const framesWrap = document.getElementById('framesWrap');
+const optionsWrap = document.getElementById('optionsWrap');
+const ruleTextEl = document.getElementById('ruleText');
+const resultEl = document.getElementById('result');
+
+// Load new question
+function loadNewQuestion() {
+  const level = document.getElementById('difficulty').value;
+  const seedVal = document.getElementById('seed').value;
+  const rng = makeRng(seedVal || Date.now());
+  
+  let question;
+  switch (level) {
+    case 'easy':
+      question = genEasy(rng);
+      break;
+    case 'medium':
+      question = genMedium(rng);
+      break;
+    case 'hard':
+      question = genHard(rng);
+      break;
+    case 'veryhard':
+      question = genVeryHard(rng);
+      break;
+    default:
+      question = genEasy(rng);
+  }
+  
+  // Safety: ensure question has frames & correct
+  if (!question || !question.frames || !question.correct) {
+    question = genEasy(rng);
+  }
+  
+  // Create options (correct + distractors)
+  const distractors = makeDistractors(question.correct, rng);
+  const allOptions = [deepCopy(question.correct[0]), ...distractors];
+  
+  // Shuffle options
+  for (let i = allOptions.length - 1; i > 0; i--) {
+    const j = Math.floor(rng() * (i + 1));
+    [allOptions[i], allOptions[j]] = [allOptions[j], allOptions[i]];
+  }
+  
+  currentState = {
+    level,
+    frames: question.frames,
+    correct: question.correct,
+    options: allOptions,
+    ruleText: question.ruleText,
+    selectedOption: null,
+    placedAnswers: new Array(question.correct.length).fill(null)
+  };
+  
+  renderQuestion();
+}
+
+function renderQuestion() {
+  // Clear containers
+  framesWrap.innerHTML = '';
+  optionsWrap.innerHTML = '';
+  
+  // Render frames
+  currentState.frames.forEach(frame => {
+    framesWrap.appendChild(createFrameGrid(frame));
+  });
+  
+  // Render placeholders (one per expected correct frame)
+  currentState.placedAnswers.forEach((_, index) => {
+    framesWrap.appendChild(createPlaceholder(index));
+  });
+  
+  // Render options
+  currentState.options.forEach((option, index) => {
+    optionsWrap.appendChild(createOptionGrid(option, index));
+  });
+  
+  // Update rule text
+  ruleTextEl.textContent = currentState.ruleText;
+  
+  // Clear result
+  resultEl.textContent = '';
+  resultEl.style.color = '';
+}
+
+function placeOptionInBlank(optionIndex, blankIndex) {
+  currentState.placedAnswers[blankIndex] = deepCopy(currentState.options[optionIndex]);
+  updatePlaceholders();
+}
+
+function updatePlaceholders() {
+  const placeholders = framesWrap.querySelectorAll('.placeholder');
+  
+  placeholders.forEach((placeholder, index) => {
+    const answer = currentState.placedAnswers[index];
+    
+    if (answer) {
+      placeholder.innerHTML = '';
+      // append a frame inside placeholder; remove outer borders from the inner frame for neatness
+      const frm = createFrameGrid(answer);
+      // make inner frame visually flush inside placeholder
+      frm.style.border = 'none';
+      frm.style.padding = '0';
+      placeholder.appendChild(frm);
+      placeholder.style.border = '3px solid #4CAF50';
+      placeholder.style.background = '#f0fff0';
+    } else {
+      placeholder.innerHTML = '<div style="font-size: 24px; color: #777;">?</div>';
+      placeholder.style.border = '3px dashed #bbb';
+      placeholder.style.background = '#fafafa';
+    }
+  });
+}
+
+// Check answer
+document.getElementById('checkBtn').addEventListener('click', () => {
+  const allFilled = currentState.placedAnswers.every(answer => answer !== null);
+  
+  if (!allFilled) {
+    resultEl.textContent = 'Lütfen tüm boşlukları doldurun.';
+    resultEl.style.color = '#f44336';
+    return;
+  }
+  
+  let allCorrect = true;
+  for (let i = 0; i < currentState.correct.length; i++) {
+    if (!eqObjects(currentState.placedAnswers[i], currentState.correct[i])) {
+      allCorrect = false;
+      break;
+    }
+  }
+  
+  if (allCorrect) {
+    resultEl.textContent = '✅ Tebrikler! Doğru cevap.';
+    resultEl.style.color = '#4CAF50';
+  } else {
+    resultEl.textContent = '❌ Yanlış cevap. Tekrar deneyin veya "Açıkla" butonuna basın.';
+    resultEl.style.color = '#f44336';
+  }
+});
+
+// Explain button
+document.getElementById('explainBtn').addEventListener('click', () => {
+  currentState.placedAnswers = deepCopy(currentState.correct);
+  updatePlaceholders();
+  resultEl.textContent = 'Doğru cevaplar gösterildi. Kural: ' + currentState.ruleText;
+  resultEl.style.color = '#2196F3';
+});
+
+// Event listeners
+document.getElementById('newBtn').addEventListener('click', loadNewQuestion);
+document.getElementById('difficulty').addEventListener('change', loadNewQuestion);
+
+// Initial load
+loadNewQuestion();
+</script>
+</body>
+</html>
