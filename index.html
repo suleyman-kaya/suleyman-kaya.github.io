@@ -1,2 +1,223 @@
-<h1>deneme</h1>
-<script>alert("it works!")</script>
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>5×5 Latin Square (A–E)</title>
+
+<style>
+:root{
+  --bg:#0f1115;
+  --cell:#1b2030;
+  --good:#19c37d;
+  --bad:#ff4d4f;
+}
+*{box-sizing:border-box}
+body{
+  margin:0; padding:24px;
+  font-family:system-ui,Arial;
+  background:radial-gradient(1000px 500px at 50% 0%,#1a2240,var(--bg));
+  color:#fff; text-align:center;
+}
+.controls{
+  display:flex; gap:10px; justify-content:center; flex-wrap:wrap;
+}
+select,button{
+  padding:10px 14px; font-size:16px;
+  border-radius:12px; border:1px solid #333;
+  background:#151925; color:#fff; cursor:pointer;
+}
+#timer{margin-top:8px; color:var(--good); font-weight:600}
+
+table{
+  margin:20px auto;
+  border-collapse:separate;
+  border-spacing:0;
+  border-radius:16px;
+  overflow:hidden;
+}
+td{
+  width:64px; height:64px;
+  border:1px solid #333;
+  background:var(--cell);
+  padding:0;
+}
+td.given{background:#222a44}
+.given-val{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-size:22px;
+  font-weight:800;
+}
+input.cell{
+  width:100%; height:100%;
+  border:0; outline:0;
+  background:transparent;
+  color:#eafff4;
+  font-size:22px;
+  font-weight:800;
+  text-align:center;
+  text-transform:uppercase;
+}
+td.bad{box-shadow:inset 0 0 0 3px var(--bad)}
+td.ok{box-shadow:inset 0 0 0 3px var(--good)}
+</style>
+</head>
+
+<body>
+
+<h1>5×5 Latin Square (A–E)</h1>
+
+<div class="controls">
+  <select id="difficulty">
+    <option value="easy">Basit</option>
+    <option value="medium">Orta</option>
+    <option value="hard">Zor</option>
+    <option value="extreme">Çok Zor</option>
+  </select>
+  <button id="btnGen">Generate</button>
+  <button id="btnClear">Clear Inputs</button>
+  <button id="btnCheck">Korrektur</button>
+</div>
+
+<div id="timer">⏱ 0 s</div>
+
+<table id="grid"></table>
+
+<script>
+const SIZE = 5;
+const SYMBOLS = ['A','B','C','D','E'];
+let solution, isHidden;
+let timerInterval, startTime;
+
+/* ---------- Latin Square üretimi ---------- */
+function randPerm(n){
+  const a=[...Array(n).keys()];
+  for(let i=n-1;i>0;i--){
+    const j=Math.floor(Math.random()*(i+1));
+    [a[i],a[j]]=[a[j],a[i]];
+  }
+  return a;
+}
+
+function generateLatinSquare(){
+  const base=[...Array(SIZE)].map((_,r)=>
+    [...Array(SIZE)].map((_,c)=>(r+c)%SIZE)
+  );
+  const sp=randPerm(SIZE), rp=randPerm(SIZE), cp=randPerm(SIZE);
+  return [...Array(SIZE)].map((_,r)=>
+    [...Array(SIZE)].map((_,c)=>SYMBOLS[sp[base[rp[r]][cp[c]]]])
+  );
+}
+
+function difficultyRate(l){
+  return {easy:.3,medium:.45,hard:.6,extreme:.75}[l];
+}
+
+/* ---------- Generate ---------- */
+function generate(){
+  solution = generateLatinSquare();
+
+  isHidden=[...Array(SIZE)].map(()=>Array(SIZE).fill(false));
+  let hide=Math.floor(SIZE*SIZE*difficultyRate(difficulty.value));
+  while(hide--){
+    const r=Math.floor(Math.random()*SIZE);
+    const c=Math.floor(Math.random()*SIZE);
+    isHidden[r][c]=true;
+  }
+  render();
+
+  if(timerInterval) clearInterval(timerInterval);
+  startTime=Date.now();
+  timerInterval=setInterval(()=>{
+    timer.textContent=`⏱ ${Math.floor((Date.now()-startTime)/1000)} s`;
+  },1000);
+}
+
+/* ---------- Render ---------- */
+function render(){
+  grid.innerHTML='';
+  for(let r=0;r<SIZE;r++){
+    const tr=document.createElement('tr');
+    for(let c=0;c<SIZE;c++){
+      const td=document.createElement('td');
+      if(!isHidden[r][c]){
+        td.className='given';
+        td.innerHTML=`<div class="given-val">${solution[r][c]}</div>`;
+      }else{
+        const i=document.createElement('input');
+        i.className='cell';
+        i.maxLength=1;
+        i.oninput=()=>i.value=i.value.replace(/[^A-E]/gi,'').toUpperCase();
+        td.appendChild(i);
+      }
+      tr.appendChild(td);
+    }
+    grid.appendChild(tr);
+  }
+}
+
+/* ---------- Korrektur ---------- */
+function check(){
+  document.querySelectorAll('td').forEach(td=>{
+    td.classList.remove('bad','ok');
+  });
+
+  let hasError=false;
+
+  // satır kontrol
+  for(let r=0;r<SIZE;r++){
+    const seen={};
+    for(let c=0;c<SIZE;c++){
+      const td=grid.rows[r].cells[c];
+      const v=td.innerText || td.querySelector('input')?.value;
+      if(!v) continue;
+      if(seen[v]){
+        td.classList.add('bad');
+        seen[v].classList.add('bad');
+        hasError=true;
+      } else {
+        seen[v]=td;
+      }
+    }
+  }
+
+  // sütun kontrol
+  for(let c=0;c<SIZE;c++){
+    const seen={};
+    for(let r=0;r<SIZE;r++){
+      const td=grid.rows[r].cells[c];
+      const v=td.innerText || td.querySelector('input')?.value;
+      if(!v) continue;
+      if(seen[v]){
+        td.classList.add('bad');
+        seen[v].classList.add('bad');
+        hasError=true;
+      } else {
+        seen[v]=td;
+      }
+    }
+  }
+
+  // ✅ HİÇ HATA YOKSA → YEŞİL
+  if(!hasError){
+    document.querySelectorAll('input.cell').forEach(inp=>{
+      inp.parentElement.classList.add('ok');
+    });
+  }
+}
+
+/* ---------- Events ---------- */
+btnGen.onclick = generate;
+btnCheck.onclick = check;
+btnClear.onclick = () => {
+  document.querySelectorAll('input.cell').forEach(i=>i.value='');
+  document.querySelectorAll('td').forEach(td=>td.classList.remove('bad','ok'));
+};
+
+/* ---------- İlk yükleme ---------- */
+generate();
+</script>
+</body>
+</html>
