@@ -6,12 +6,11 @@
 <meta name="viewport" content="width=device-width,initial-scale=1" />
 <style>
   :root {
-    --cell: 44px;
+    --cell: 52px;
     --gap: 12px;
     --accent: #0aa7ff;
     --board-border: 3px solid #111;
   }
-  
   * { box-sizing: border-box; }
 
   body {
@@ -21,242 +20,55 @@
     color: #111;
     line-height: 1.5;
   }
-  
-  h1 {
-    text-align: center;
-    margin-bottom: 6px;
-    color: #222;
-  }
-  
-  .top-bar {
-    display: flex;
-    gap: 12px;
-    align-items: center;
-    justify-content: center;
-    margin-bottom: 20px;
-    flex-wrap: wrap;
-  }
-  
-  select, input[type=number] {
-    padding: 8px;
-    font-size: 14px;
-    border: 1px solid #ccc;
-    border-radius: 4px;
-  }
-  
-  button {
-    padding: 10px 14px;
-    font-size: 14px;
-    cursor: pointer;
-    background: var(--accent);
-    color: white;
-    border: 0;
-    border-radius: 4px;
-    transition: background 0.2s;
-  }
-  
-  button:hover {
-    background: #0088dd;
-  }
-  
-  .container {
-    display: flex;
-    gap: 30px;
-    align-items: flex-start;
-    justify-content: center;
-    flex-wrap: wrap;
-  }
-  
-  /* Sequence area */
-  .sequence {
-    background: white;
-    padding: 20px;
-    border-radius: 10px;
-    box-shadow: 0 6px 18px rgba(0,0,0,0.08);
-    min-width: 300px;
-  }
-  
-  .frames {
-    display: flex;
-    gap: 15px;
-    flex-wrap: nowrap;       /* keep patterns side-by-side */
-    justify-content: flex-start;
-    margin-bottom: 20px;
-    overflow-x: auto;        /* horizontal scroll on small screens */
-    padding-bottom: 6px;
-  }
-  
-  .frame {
-    width: calc(var(--cell) * 5 + 16px); /* includes padding */
-    padding: 8px;
-    background: #fff;
-    border: var(--board-border);
-    border-radius: 6px;
-    display: grid;
-    grid-template-columns: repeat(5, var(--cell));
-    grid-template-rows: repeat(5, var(--cell));
-    box-sizing: border-box;
-    flex: 0 0 auto;
-  }
-  
-  .placeholder {
-    width: calc(var(--cell) * 5 + 16px);
-    height: calc(var(--cell) * 5 + 16px);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border: 3px dashed #bbb;
-    background: #fafafa;
-    border-radius: 6px;
-    cursor: pointer;
-    transition: border-color 0.2s;
-    box-sizing: border-box;
-    padding: 8px;
-    flex: 0 0 auto;
-  }
-  
-  .placeholder:hover {
-    border-color: var(--accent);
-    background: #f0f8ff;
-  }
-  
-  /* Each cell is the single source of layout for its content.
-     Content is centered with flexbox; glyphs scale with the cell size */
-  .grid-cell {
-    width: var(--cell);
-    height: var(--cell);
-    box-sizing: border-box;
-    border: 1px solid #eee;
-    position: relative;
-    overflow: hidden;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-  }
-  
-  /* Glyph styling: use a symbol font (fallbacks provided) */
-  .glyph {
-    display: inline-block;
-    font-family: "Segoe UI Symbol", "Noto Color Emoji", "Segoe UI", "Arial Unicode MS", sans-serif;
-    font-size: calc(var(--cell) * 0.62);
-    line-height: 1;
-    transform-origin: center center;
-    user-select: none;
-    -webkit-font-smoothing: antialiased;
-    -moz-osx-font-smoothing: grayscale;
-  }
+  h1 { text-align: center; margin-bottom: 6px; color: #222; }
 
-  /* Colors / visual identity per logical shape */
-  .glyph.square { color: #ffcc66; text-shadow: 0 0 0 #000; }   /* arrow */
-  .glyph.triangle { color: #7bd389; }                         /* triangle */
-  .glyph.circle { color: #ff6666; }                           /* heart */
-  .glyph.hex { color: #66aaff; }                              /* club/diamond */
+  .top-bar { display:flex; gap:12px; align-items:center; justify-content:center; margin-bottom:20px; flex-wrap:wrap; }
+  select, input[type=number] { padding:8px; font-size:14px; border:1px solid #ccc; border-radius:4px; }
+  button { padding:10px 14px; font-size:14px; cursor:pointer; background:var(--accent); color:white; border:0; border-radius:4px; transition:background .2s; }
+  button:hover { background:#0088dd; }
 
-  /* Optional small stroke effect using text-stroke where supported */
-  .glyph { -webkit-text-stroke: 1px rgba(0,0,0,0.12); }
+  .container { display:flex; gap:30px; align-items:flex-start; justify-content:center; flex-wrap:wrap; }
+  .sequence { background:white; padding:20px; border-radius:10px; box-shadow:0 6px 18px rgba(0,0,0,0.08); min-width:300px; }
 
-  /* Options */
-  .sidebar {
-    width: 320px;
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 10px;
-    align-content: start;
-  }
-  
-  .option {
-    width: calc(var(--cell) * 5 + 16px);
-    height: calc(var(--cell) * 5 + 16px);
-    border: 2px solid #ddd;
-    background: white;
-    display: grid;
-    grid-template-columns: repeat(5, var(--cell));
-    grid-template-rows: repeat(5, var(--cell));
-    cursor: pointer;
-    border-radius: 6px;
-    transition: transform 0.2s, box-shadow 0.2s;
-    box-sizing: border-box;
-    padding: 0;
-    align-items: start;
-    flex: 0 0 auto;
-  }
-  
-  .option:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-  }
-  
-  .option.selected {
-    outline: 4px solid rgba(0, 170, 255, 0.3);
-    border-color: var(--accent);
-    box-shadow: 0 6px 12px rgba(0,0,0,0.08);
-  }
-  
-  .controls-bottom {
-    margin-top: 20px;
-    text-align: center;
-  }
-  
-  #result {
-    margin-top: 15px;
-    padding: 10px;
-    border-radius: 5px;
-    font-weight: 600;
-    min-height: 24px;
-  }
-  
-  .meta {
-    font-size: 14px;
-    color: #444;
-    text-align: center;
-    margin: 10px 0;
-    padding: 10px;
-    background: #f8f9fa;
-    border-radius: 5px;
-  }
-  
-  footer {
-    text-align: center;
-    margin-top: 30px;
-    color: #666;
-    font-size: 13px;
-    padding-top: 15px;
-    border-top: 1px solid #eee;
-  }
-  
-  @media (max-width: 768px) {
-    .container {
-      flex-direction: column;
-      align-items: center;
-    }
-    
-    .sidebar {
-      width: 100%;
-      max-width: 300px;
-    }
-    
-    .option {
-      width: calc(var(--cell) * 5 + 12px);
-      height: calc(var(--cell) * 5 + 12px);
-    }
+  .frames { display:flex; gap:15px; flex-wrap:nowrap; justify-content:flex-start; margin-bottom:20px; overflow-x:auto; padding-bottom:6px; }
+  .frame { width: calc(var(--cell) * 4 + 16px); padding:8px; background:#fff; border:var(--board-border); border-radius:6px; display:grid; grid-template-columns:repeat(4,var(--cell)); grid-template-rows:repeat(4,var(--cell)); box-sizing:border-box; flex:0 0 auto; }
+  .placeholder { width: calc(var(--cell) * 4 + 16px); height: calc(var(--cell) * 4 + 16px); display:flex; align-items:center; justify-content:center; border:3px dashed #bbb; background:#fafafa; border-radius:6px; cursor:pointer; transition:border-color .2s; box-sizing:border-box; padding:8px; flex:0 0 auto; }
+  .placeholder:hover { border-color:var(--accent); background:#f0f8ff; }
 
-    .frame, .placeholder {
-      width: calc(var(--cell) * 5 + 12px);
-      height: calc(var(--cell) * 5 + 12px);
-    }
-  }
+  .grid-cell { width:var(--cell); height:var(--cell); box-sizing:border-box; border:1px solid #eee; position:relative; overflow:hidden; display:flex; align-items:center; justify-content:center; }
+  .glyph { display:inline-block; font-family:"Segoe UI Symbol", "Noto Color Emoji", "Segoe UI", "Arial Unicode MS", sans-serif; font-size:calc(var(--cell) * 0.62); line-height:1; transform-origin:center center; user-select:none; -webkit-font-smoothing:antialiased; -moz-osx-font-smoothing:grayscale; -webkit-text-stroke:0.6px rgba(0,0,0,0.12); }
+
+  .glyph.square { color:#ffcc66; }
+  .glyph.triangle { color:#7bd389; }
+  .glyph.circle { color:#ff6666; }
+  .glyph.hex { color:#66aaff; }
+
+  .sidebar { width:320px; display:grid; grid-template-columns:1fr 1fr; gap:10px; align-content:start; }
+  .option { width: calc(var(--cell) * 4 + 16px); height: calc(var(--cell) * 4 + 16px); border:2px solid #ddd; background:white; display:grid; grid-template-columns:repeat(4,var(--cell)); grid-template-rows:repeat(4,var(--cell)); cursor:pointer; border-radius:6px; transition:transform .2s, box-shadow .2s; box-sizing:border-box; padding:0; align-items:start; flex:0 0 auto; }
+  .option:hover { transform:translateY(-2px); box-shadow:0 4px 8px rgba(0,0,0,0.1); }
+  .option.selected { outline:4px solid rgba(0,170,255,0.3); border-color:var(--accent); box-shadow:0 6px 12px rgba(0,0,0,0.08); }
+
+  .controls-bottom { margin-top:20px; text-align:center; }
+  #result { margin-top:15px; padding:10px; border-radius:5px; font-weight:600; min-height:24px; }
+  .meta { font-size:14px; color:#444; text-align:center; margin:10px 0; padding:10px; background:#f8f9fa; border-radius:5px; }
+
+  footer { text-align:center; margin-top:30px; color:#666; font-size:13px; padding-top:15px; border-top:1px solid #eee; }
+
+  @media (max-width:768px){ .container{flex-direction:column; align-items:center;} .sidebar{width:100%; max-width:300px;} .option{width:calc(var(--cell)*4+12px); height:calc(var(--cell)*4+12px);} .frame,.placeholder{width:calc(var(--cell)*4+12px); height:calc(var(--cell)*4+12px);} }
 </style>
 </head>
 <body>
   <h1>Görsel Örüntü Tamamlama Oyunu</h1>
-  
+
   <div class="top-bar">
     <label>Seviye:
       <select id="difficulty">
-        <option value="easy">Basit</option>
-        <option value="medium">Orta</option>
-        <option value="hard">Zor</option>
-        <option value="veryhard">Çok Zor</option>
+        <option value="easy">Basit (Zorluk 1)</option>
+        <option value="medium">Orta (Zorluk 2)</option>
+        <option value="hard">Zor (Zorluk 3)</option>
+        <option value="veryhard">Çok Zor (Zorluk 4)</option>
+        <option value="expert">Uzman (Zorluk 5)</option>
+        <option value="master">Usta (Zorluk 6)</option>
       </select>
     </label>
     <label>Seed (opsiyonel):
@@ -264,927 +76,541 @@
     </label>
     <button id="newBtn">Yeni Soru</button>
   </div>
-  
+
   <div class="container">
     <div class="sequence">
       <div class="frames" id="framesWrap"></div>
       <div class="meta"><span id="ruleText"></span></div>
-      
+
       <div class="controls-bottom">
         <button id="checkBtn">Cevabı Kontrol Et</button>
-        <button id="explainBtn" style="background: #666;">Açıkla</button>
+        <button id="explainBtn" style="background:#666;">Açıkla</button>
         <div id="result"></div>
       </div>
     </div>
-    
+
     <div class="sidebar" id="optionsWrap"></div>
   </div>
-  
+
   <footer>Görsel örüntü tamamlama oyunu - Mantıksal akıl yürütme becerilerinizi test edin</footer>
 
 <script>
-// Utility functions
+// --- Utility ---
 function makeRng(seed) {
   if (!seed) return Math.random;
   let s = Number(seed) || 1;
-  return function() {
-    s = (s * 1664525 + 1013904223) | 0;
-    return (s >>> 0) / 4294967296;
-  };
+  return function() { s = (s * 1664525 + 1013904223) | 0; return (s >>> 0) / 4294967296; };
 }
+function clamp(v,a,b){ return Math.max(a,Math.min(b,v)); }
+function deepCopy(o){ return JSON.parse(JSON.stringify(o)); }
+function letterToX(letter){ return letter.toUpperCase().charCodeAt(0) - 65; }
 
-function choose(arr, rng) {
-  return arr[Math.floor(rng() * arr.length)];
+// 4x4 GRID
+const GRID = { w:4, h:4 };
+const SHAPE_GLYPHS = { square:'➤', triangle:'▲', circle:'♥', hex:'♣' };
+
+// --- Normalization & comparison helpers ---
+function normalizeObj(o){
+  const obj = { ...o };
+  obj.x = Math.round(Number(obj.x) || 0);
+  obj.y = Math.round(Number(obj.y) || 0);
+  obj.x = clamp(obj.x, 0, GRID.w-1);
+  obj.y = clamp(obj.y, 0, GRID.h-1);
+  obj.rot = Math.round(Number(obj.rot) || 0);
+  obj.rot = ((obj.rot % 360) + 360) % 360;
+  if (obj.visible === undefined) obj.visible = true;
+  if (!obj.shape) obj.shape = 'square';
+  if (!obj.color) obj.color = '';
+  return obj;
 }
-
-function clamp(v, min, max) {
-  return Math.max(min, Math.min(max, v));
+function normalizeFrame(frame){
+  if (!Array.isArray(frame)) return [];
+  return frame.map(normalizeObj);
 }
-
-function deepCopy(obj) {
-  return JSON.parse(JSON.stringify(obj));
-}
-
-// Game constants
-const GRID = { w: 5, h: 5 };
-// Keep the old logical shape names so generators don't need changes.
-// We'll map these to glyphs for display.
-const SHAPES = ['square', 'triangle', 'circle', 'hex'];
-
-// Object comparison for answer checking
-function normalizeObjects(objs) {
-  return objs.map(o => ({
-    shape: o.shape,
-    x: o.x,
-    y: o.y,
-    rot: o.rot || 0,
-    visible: o.visible !== false
-  })).sort((a, b) => {
-    if (a.shape !== b.shape) return a.shape.localeCompare(b.shape);
-    if (a.x !== b.x) return a.x - b.x;
-    return a.y - b.y;
+function normalizeObjectsForKey(objs){
+  const arr = normalizeFrame(objs).map(o=>{
+    return { shape:o.shape, x:o.x, y:o.y, rot:o.rot, visible:!!o.visible, color:o.color||'' };
   });
+  arr.sort((a,b)=>{
+    if(a.shape!==b.shape) return a.shape.localeCompare(b.shape);
+    if(a.color!==b.color) return (a.color||'').localeCompare(b.color||'');
+    if(a.x!==b.x) return a.x-b.x;
+    if(a.y!==b.y) return a.y-b.y;
+    return a.rot-b.rot;
+  });
+  return arr;
 }
-
-function eqObjects(a, b) {
-  if (!a || !b || a.length !== b.length) return false;
-  const na = normalizeObjects(a);
-  const nb = normalizeObjects(b);
-  
-  for (let i = 0; i < na.length; i++) {
-    if (na[i].shape !== nb[i].shape) return false;
-    if (na[i].x !== nb[i].x) return false;
-    if (na[i].y !== nb[i].y) return false;
-    if ((na[i].rot || 0) !== (nb[i].rot || 0)) return false;
-    if (na[i].visible !== nb[i].visible) return false;
+function frameKey(frame){ return JSON.stringify(normalizeObjectsForKey(frame)); }
+function eqObjects(a,b){
+  if(!Array.isArray(a) || !Array.isArray(b) || a.length !== b.length) return false;
+  const A = normalizeObjectsForKey(a), B = normalizeObjectsForKey(b);
+  if(A.length !== B.length) return false;
+  for(let i=0;i<A.length;i++){
+    const pa = A[i], pb = B[i];
+    if(pa.shape !== pb.shape) return false;
+    if(pa.x !== pb.x) return false;
+    if(pa.y !== pb.y) return false;
+    if(pa.rot !== pb.rot) return false;
+    if(pa.visible !== pb.visible) return false;
+    if((pa.color||'') !== (pb.color||'')) return false;
   }
   return true;
 }
-
-// Validate frame: not empty and has expected object count
-function isValidFrame(frame, expectedCount = null) {
-  if (!Array.isArray(frame) || frame.length === 0) return false;
-  const hasVisible = frame.some(o => o.visible !== false);
-  if (!hasVisible) return false;
-  if (expectedCount !== null && frame.length !== expectedCount) return false;
+function isValidFrame(frame, expectedCount=null){
+  if(!Array.isArray(frame) || frame.length === 0) return false;
+  const norm = normalizeFrame(frame);
+  const hasVisible = norm.some(o=> o.visible !== false);
+  if(!hasVisible) return false;
+  if(expectedCount !== null && norm.length !== expectedCount) return false;
   return true;
 }
 
-// Generate distractors for a single correct frame (preserves object count)
-function makeDistractorsForFrame(correctFrame, rng, max = 5) {
+// --- New: ensure unique positions by relocating colliding objects ---
+// find nearest free cell (BFS by Manhattan radius)
+function findNearestFreePosition(occupiedSet, startX, startY){
+  const key = (x,y) => `${x},${y}`;
+  if(!occupiedSet.has(key(startX,startY))) return { x:startX, y:startY };
+  // BFS by increasing manhattan radius
+  for(let r=1; r<=Math.max(GRID.w, GRID.h); r++){
+    for(let dx=-r; dx<=r; dx++){
+      const dy = r - Math.abs(dx);
+      const candidates = [
+        { x: startX + dx, y: startY + dy },
+        { x: startX + dx, y: startY - dy }
+      ];
+      for(const c of candidates){
+        if(c.x < 0 || c.x >= GRID.w || c.y < 0 || c.y >= GRID.h) continue;
+        if(!occupiedSet.has(key(c.x,c.y))) return { x:c.x, y:c.y };
+      }
+    }
+  }
+  // fallback: find any free cell
+  for(let y=0;y<GRID.h;y++){
+    for(let x=0;x<GRID.w;x++){
+      if(!occupiedSet.has(key(x,y))) return { x, y };
+    }
+  }
+  // none free
+  return null;
+}
+
+// ensureUniquePositions: for given frame array, ensure no two objects share same (x,y)
+function ensureUniquePositions(frame){
+  const norm = normalizeFrame(frame);
+  const occupied = new Set();
+  const key = (x,y) => `${x},${y}`;
+  const result = [];
+  for(const obj of norm){
+    let tx = obj.x, ty = obj.y;
+    if(occupied.has(key(tx,ty))){
+      // find nearest free
+      const free = findNearestFreePosition(occupied, tx, ty);
+      if(free){
+        tx = free.x; ty = free.y;
+      } else {
+        // can't find free (all occupied), keep original (will overlap, but rare)
+      }
+    }
+    occupied.add(key(tx,ty));
+    const placed = { ...obj, x: tx, y: ty };
+    result.push(placed);
+  }
+  return result;
+}
+
+// --- Rendering ---
+function renderShape(obj){
+  const span = document.createElement('span');
+  span.className = 'glyph ' + (obj.shape || 'square');
+  span.textContent = SHAPE_GLYPHS[obj.shape] || '?';
+  span.style.transform = obj.rot ? `rotate(${obj.rot}deg)` : '';
+  if(obj.color) span.style.color = obj.color;
+  return span;
+}
+
+function createFrameGrid(objects){
+  const container = document.createElement('div');
+  container.className = 'frame';
+  const norm = ensureUniquePositions(objects);
+  // create a 4x4 iteration; only one object per cell by design
+  for(let y=0;y<GRID.h;y++){
+    for(let x=0;x<GRID.w;x++){
+      const cell = document.createElement('div');
+      cell.className = 'grid-cell';
+      // find object at this coord (there will be at most one)
+      for(const obj of norm){
+        if(obj.x === x && obj.y === y && obj.visible !== false){
+          cell.appendChild(renderShape(obj));
+          break;
+        }
+      }
+      container.appendChild(cell);
+    }
+  }
+  return container;
+}
+
+function createPlaceholder(index){
+  const placeholder = document.createElement('div');
+  placeholder.className = 'placeholder';
+  placeholder.dataset.index = index;
+  placeholder.innerHTML = '<div style="font-size:24px;color:#777;">?</div>';
+  placeholder.addEventListener('click', ()=>{
+    if(currentState.selectedOption !== null) placeOptionInBlank(currentState.selectedOption, index);
+  });
+  return placeholder;
+}
+
+function createOptionGrid(objects, index){
+  const option = document.createElement('div');
+  option.className = 'option';
+  option.dataset.index = index;
+  const norm = ensureUniquePositions(objects);
+  for(let y=0;y<GRID.h;y++){
+    for(let x=0;x<GRID.w;x++){
+      const cell = document.createElement('div');
+      cell.className = 'grid-cell';
+      for(const obj of norm){
+        if(obj.x === x && obj.y === y && obj.visible !== false){
+          cell.appendChild(renderShape(obj));
+          break;
+        }
+      }
+      option.appendChild(cell);
+    }
+  }
+  option.addEventListener('click', ()=>{
+    document.querySelectorAll('.option').forEach(o=> o.classList.remove('selected'));
+    option.classList.add('selected');
+    currentState.selectedOption = index;
+  });
+  return option;
+}
+
+// --- Distractors generator (preserve object count, and then ensureUniquePositions) ---
+function makeDistractorsForFrame(correctFrame, rng, max=5){
   const distractors = [];
   const attempts = max * 8;
-  for (let i = 0; i < attempts && distractors.length < max; i++) {
-    const variantFrame = deepCopy(correctFrame).map(obj => {
-      const variant = { ...obj };
-      // Apply random modifications but preserve presence of object
-      const modType = Math.floor(rng() * 5);
-      switch (modType) {
-        case 0: // Change position slightly
-          variant.x = clamp(variant.x + choose([-1, 0, 1], rng), 0, GRID.w - 1);
-          variant.y = clamp(variant.y + choose([-1, 0, 1], rng), 0, GRID.h - 1);
+  const baseCount = (Array.isArray(correctFrame) ? correctFrame.length : 0);
+  for(let i=0;i<attempts && distractors.length < max;i++){
+    const variant = deepCopy(correctFrame).map(o=>{
+      const v = {...o};
+      const mod = Math.floor(rng()*5);
+      switch(mod){
+        case 0:
+          v.x = clamp(v.x + choose([-1,0,1], rng), 0, GRID.w-1);
+          v.y = clamp(v.y + choose([-1,0,1], rng), 0, GRID.h-1);
           break;
-        case 1: // Change shape (glyph)
-          variant.shape = choose(SHAPES.filter(s => s !== variant.shape), rng);
+        case 1:
+          v.shape = choose(['square','triangle','circle','hex'].filter(s=>s!==v.shape), rng);
           break;
-        case 2: // Change rotation
-          variant.rot = (variant.rot + 90 * (1 + Math.floor(rng() * 3))) % 360;
+        case 2:
+          v.rot = ((v.rot || 0) + 90 * (1 + Math.floor(rng()*3))) % 360;
           break;
-        case 3: // Slight position move on one object only
-          if (rng() > 0.5) {
-            variant.x = clamp(variant.x + choose([-1, 1], rng), 0, GRID.w - 1);
-            variant.y = clamp(variant.y + choose([-1, 1], rng), 0, GRID.h - 1);
-          }
+        case 3:
+          if(rng()>0.5){ v.x = clamp(v.x + choose([-1,1], rng),0,GRID.w-1); v.y = clamp(v.y + choose([-1,1], rng),0,GRID.h-1); }
           break;
-        case 4: // keep same (rare)
+        case 4:
+          v.color = v.color || '';
+          if(!v.color) v.color = choose(['white','goldenrod','green','hotpink','red','black'], rng);
           break;
       }
-      return variant;
+      return v;
     });
-
-    if (isValidFrame(variantFrame, correctFrame.length) && !eqObjects(variantFrame, correctFrame) &&
-        !distractors.some(d => eqObjects(d, variantFrame))) {
-      distractors.push(variantFrame);
+    // ensure disambiguation by relocating overlaps
+    const candidate = ensureUniquePositions(variant);
+    if(isValidFrame(candidate, baseCount) && !eqObjects(candidate, correctFrame) && !distractors.some(d=>eqObjects(d, candidate))){
+      distractors.push(candidate);
     }
   }
   return distractors;
 }
 
-// --- Level generators (unchanged logic from previous version) ---
-function genEasy(rng) {
-  const shape = choose(SHAPES, rng);
-  const startX = Math.floor(rng() * 3) + 1;
-  const startY = Math.floor(rng() * 3) + 1;
-  
-  const pattern = choose(['horizontal', 'vertical', 'diagonal', 'circular'], rng);
-  let frames = [];
-  let ruleText = '';
-  
-  if (pattern === 'horizontal') {
-    const dx = choose([-1, 1], rng);
-    ruleText = `${shape} her adımda yatay olarak ${dx > 0 ? 'sağa' : 'sola'} hareket ediyor`;
-    
-    for (let i = 0; i < 4; i++) {
-      frames.push([{
-        id: 'A',
-        shape: shape,
-        x: clamp(startX + i * dx, 0, GRID.w - 1),
-        y: startY,
-        rot: 0,
-        visible: true
-      }]);
-    }
-    
-    return {
-      frames,
-      correct: [[{
-        id: 'A',
-        shape: shape,
-        x: clamp(startX + 4 * dx, 0, GRID.w - 1),
-        y: startY,
-        rot: 0,
-        visible: true
-      }]],
-      ruleText
-    };
-  } else if (pattern === 'vertical') {
-    const dy = choose([-1, 1], rng);
-    ruleText = `${shape} her adımda dikey olarak ${dy > 0 ? 'aşağı' : 'yukarı'} hareket ediyor`;
-    
-    for (let i = 0; i < 4; i++) {
-      frames.push([{
-        id: 'A',
-        shape: shape,
-        x: startX,
-        y: clamp(startY + i * dy, 0, GRID.h - 1),
-        rot: 0,
-        visible: true
-      }]);
-    }
-    
-    return {
-      frames,
-      correct: [[{
-        id: 'A',
-        shape: shape,
-        x: startX,
-        y: clamp(startY + 4 * dy, 0, GRID.h - 1),
-        rot: 0,
-        visible: true
-      }]],
-      ruleText
-    };
-  } else if (pattern === 'diagonal') {
-    const dx = choose([-1, 1], rng);
-    const dy = choose([-1, 1], rng);
-    ruleText = `${shape} her adımda diagonal olarak (${dx}, ${dy}) yönünde hareket ediyor`;
-    
-    for (let i = 0; i < 4; i++) {
-      frames.push([{
-        id: 'A',
-        shape: shape,
-        x: clamp(startX + i * dx, 0, GRID.w - 1),
-        y: clamp(startY + i * dy, 0, GRID.h - 1),
-        rot: 0,
-        visible: true
-      }]);
-    }
-    
-    return {
-      frames,
-      correct: [[{
-        id: 'A',
-        shape: shape,
-        x: clamp(startX + 4 * dx, 0, GRID.w - 1),
-        y: clamp(startY + 4 * dy, 0, GRID.h - 1),
-        rot: 0,
-        visible: true
-      }]],
-      ruleText
-    };
-  } else { // circular
-    const path = [
-      {dx: 1, dy: 0},
-      {dx: 0, dy: 1},
-      {dx: -1, dy: 0},
-      {dx: 0, dy: -1}
-    ];
-    let x = startX;
-    let y = startY;
-    ruleText = `${shape} saat yönünde bir döngü izliyor`;
-    for (let i = 0; i < 4; i++) {
-      const step = path[i % path.length];
-      x = clamp(x + step.dx, 0, GRID.w - 1);
-      y = clamp(y + step.dy, 0, GRID.h - 1);
-      frames.push([{
-        id: 'A',
-        shape: shape,
-        x,
-        y,
-        rot: 0,
-        visible: true
-      }]);
-    }
-    const nextStep = path[0];
-    const nx = clamp(x + nextStep.dx, 0, GRID.w - 1);
-    const ny = clamp(y + nextStep.dy, 0, GRID.h - 1);
-    return {
-      frames,
-      correct: [[{
-        id: 'A',
-        shape: shape,
-        x: nx,
-        y: ny,
-        rot: 0,
-        visible: true
-      }]],
-      ruleText
-    };
-  }
+function choose(arr, rng){ return arr[Math.floor(rng()*arr.length)]; }
+
+// --- Generators (adjusted for 4x4, then ensureUniquePositions applied) ---
+function clampLetterToAtoD(letter){
+  const x = letterToX(letter);
+  return String.fromCharCode(65 + clamp(x, 0, 3));
 }
 
-function genMedium(rng) {
-  const shape1 = choose(SHAPES, rng);
-  const shape2 = choose(SHAPES.filter(s => s !== shape1), rng);
-  
-  const start1 = { x: 1, y: 1 };
-  const start2 = { x: 3, y: 3 };
-  
-  const pattern1 = choose(['move', 'rotate'], rng);
-  const pattern2 = choose(['move', 'color'], rng);
-  
-  let frames = [];
-  let ruleText = '';
-  
-  if (pattern1 === 'move' && pattern2 === 'move') {
-    const dx1 = choose([-1, 0, 1], rng);
-    const dy1 = choose([-1, 0, 1], rng);
-    const dx2 = choose([-1, 0, 1], rng);
-    const dy2 = choose([-1, 0, 1], rng);
-    
-    ruleText = `${shape1} (${dx1},${dy1}) ve ${shape2} (${dx2},${dy2}) vektörleriyle hareket ediyor`;
-    
-    for (let i = 0; i < 4; i++) {
-      frames.push([
-        {
-          id: 'A',
-          shape: shape1,
-          x: clamp(start1.x + i * dx1, 0, GRID.w - 1),
-          y: clamp(start1.y + i * dy1, 0, GRID.h - 1),
-          rot: 0,
-          visible: true
-        },
-        {
-          id: 'B',
-          shape: shape2,
-          x: clamp(start2.x + i * dx2, 0, GRID.w - 1),
-          y: clamp(start2.y + i * dy2, 0, GRID.h - 1),
-          rot: 0,
-          visible: true
-        }
-      ]);
-    }
-    
-    return {
-      frames,
-      correct: [[
-        {
-          id: 'A',
-          shape: shape1,
-          x: clamp(start1.x + 4 * dx1, 0, GRID.w - 1),
-          y: clamp(start1.y + 4 * dy1, 0, GRID.h - 1),
-          rot: 0,
-          visible: true
-        },
-        {
-          id: 'B',
-          shape: shape2,
-          x: clamp(start2.x + 4 * dx2, 0, GRID.w - 1),
-          y: clamp(start2.y + 4 * dy2, 0, GRID.h - 1),
-          rot: 0,
-          visible: true
-        }
-      ]],
-      ruleText
-    };
-  } else {
-    const dx1 = choose([-1, 1], rng);
-    const dy2 = choose([-1, 1], rng);
-    ruleText = `Fallback: ${shape1} yatay ${dx1 > 0 ? 'sağa' : 'sola'}, ${shape2} dikey ${dy2 > 0 ? 'aşağı' : 'yukarı'} hareket ediyor`;
-    
-    for (let i = 0; i < 4; i++) {
-      frames.push([
-        {
-          id: 'A',
-          shape: shape1,
-          x: clamp(start1.x + i * dx1, 0, GRID.w - 1),
-          y: start1.y,
-          rot: 0,
-          visible: true
-        },
-        {
-          id: 'B',
-          shape: shape2,
-          x: start2.x,
-          y: clamp(start2.y + i * dy2, 0, GRID.h - 1),
-          rot: 0,
-          visible: true
-        }
-      ]);
-    }
-    
-    return {
-      frames,
-      correct: [[
-        {
-          id: 'A',
-          shape: shape1,
-          x: clamp(start1.x + 4 * dx1, 0, GRID.w - 1),
-          y: start1.y,
-          rot: 0,
-          visible: true
-        },
-        {
-          id: 'B',
-          shape: shape2,
-          x: start2.x,
-          y: clamp(start2.y + 4 * dy2, 0, GRID.h - 1),
-          rot: 0,
-          visible: true
-        }
-      ]],
-      ruleText
-    };
+function genLevel1(rng){
+  const letters = ['B','B','B','B','B','B'];
+  const rows = [2,1,2,3,4,3];
+  const sheets=[];
+  for(let i=0;i<6;i++){
+    const col = clampLetterToAtoD(letters[i]);
+    const row = clamp(rows[i],1,4);
+    sheets.push([{ id:'A', shape:'triangle', x:letterToX(col), y:row-1, rot:0, visible:true, color:'green' }]);
   }
+  return { frames: sheets.slice(0,4).map(s=>ensureUniquePositions(s)), correct:[ensureUniquePositions(sheets[4]), ensureUniquePositions(sheets[5])], ruleText:"Zorluk 1: Tek cisim, dikey (B sütunu) salınım. 4x4 grid." };
 }
 
-function genHard(rng) {
-  const shape1 = 'square';
-  const shape2 = 'triangle';
-  
-  let frames = [];
-  const center = { x: 2, y: 2 };
-  
-  let pos1 = { x: 0, y: 0 };
-  let pos2 = { x: 4, y: 4 };
-  
-  const ruleText = "Şekiller merkez etrafında 90° dönüyor ve kare ek olarak sağa kayıyor";
-  
-  for (let step = 0; step < 4; step++) {
-    const rotatePoint = (p) => {
-      const relX = p.x - center.x;
-      const relY = p.y - center.y;
-      return {
-        x: center.x - relY,
-        y: center.y + relX
-      };
-    };
-    
-    const rotated1 = rotatePoint(pos1);
-    const rotated2 = rotatePoint(pos2);
-    
-    const final1 = {
-      x: clamp(Math.round(rotated1.x) + 1, 0, GRID.w - 1),
-      y: clamp(Math.round(rotated1.y), 0, GRID.h - 1)
-    };
-    
-    frames.push([
-      {
-        id: 'A',
-        shape: shape1,
-        x: final1.x,
-        y: final1.y,
-        rot: step * 90,
-        visible: true
-      },
-      {
-        id: 'B',
-        shape: shape2,
-        x: clamp(Math.round(rotated2.x), 0, GRID.w - 1),
-        y: clamp(Math.round(rotated2.y), 0, GRID.h - 1),
-        rot: step * 90,
-        visible: true
-      }
-    ]);
-    
-    pos1 = { x: final1.x, y: final1.y };
-    pos2 = { x: Math.round(rotated2.x), y: Math.round(rotated2.y) };
+function genLevel2(rng){
+  const letters=['A','B','C','B','A','B'];
+  const rows=[3,2,1,2,3,2];
+  const sheets=[];
+  for(let i=0;i<6;i++){
+    const col = clampLetterToAtoD(letters[i]);
+    const row = clamp(rows[i],1,4);
+    sheets.push([{ id:'A', shape:'square', x:letterToX(col), y:row-1, rot:0, visible:true, color:'goldenrod' }]);
   }
-  
-  const nextFrames = [];
-  for (let step = 0; step < 2; step++) {
-    const rotatePoint = (p) => {
-      const relX = p.x - center.x;
-      const relY = p.y - center.y;
-      return {
-        x: center.x - relY,
-        y: center.y + relX
-      };
-    };
-    
-    const rotated1 = rotatePoint(pos1);
-    const rotated2 = rotatePoint(pos2);
-    
-    const final1 = {
-      x: clamp(Math.round(rotated1.x) + 1, 0, GRID.w - 1),
-      y: clamp(Math.round(rotated1.y), 0, GRID.h - 1)
-    };
-    
-    nextFrames.push([
-      {
-        id: 'A',
-        shape: shape1,
-        x: final1.x,
-        y: final1.y,
-        rot: (4 + step) * 90,
-        visible: true
-      },
-      {
-        id: 'B',
-        shape: shape2,
-        x: clamp(Math.round(rotated2.x), 0, GRID.w - 1),
-        y: clamp(Math.round(rotated2.y), 0, GRID.h - 1),
-        rot: (4 + step) * 90,
-        visible: true
-      }
-    ]);
-    
-    pos1 = { x: final1.x, y: final1.y };
-    pos2 = { x: Math.round(rotated2.x), y: Math.round(rotated2.y) };
-  }
-  
-  return {
-    frames,
-    correct: nextFrames,
-    ruleText
-  };
+  return { frames: sheets.slice(0,4).map(s=>ensureUniquePositions(s)), correct:[ensureUniquePositions(sheets[4]), ensureUniquePositions(sheets[5])], ruleText:"Zorluk 2: Tek cisim (sarı), V şeklinde salınım. 4x4 grid." };
 }
 
-function genVeryHard(rng) {
-  let frames = [];
-  
-  const startA = { x: 1, y: 1, dx: 1, dy: 0 };
-  const startB = { x: 3, y: 3 };
-  
-  let posA = { ...startA };
-  let posB = { ...startB };
-  let visibleB = true;
-  
-  const ruleText = "Kare kenarlardan sekerek hareket ediyor. Üçgen ise kareyle aynı satırdaysa görünürlüğünü değiştiriyor";
-  
-  for (let step = 0; step < 4; step++) {
-    let nextX = posA.x + posA.dx;
-    let nextY = posA.y + posA.dy;
-    
-    if (nextX < 0 || nextX >= GRID.w) {
-      posA.dx *= -1;
-      nextX = clamp(posA.x + posA.dx, 0, GRID.w - 1);
-    }
-    if (nextY < 0 || nextY >= GRID.h) {
-      posA.dy *= -1;
-      nextY = clamp(posA.y + posA.dy, 0, GRID.h - 1);
-    }
-    
-    posA.x = nextX;
-    posA.y = nextY;
-    
-    if (posB.y === posA.y) {
-      visibleB = !visibleB;
-    }
-    
-    if (step % 2 === 0) {
-      posB.x = clamp(posB.x + 1, 0, GRID.w - 1);
-    }
-    
-    frames.push([
-      {
-        id: 'A',
-        shape: 'square',
-        x: posA.x,
-        y: posA.y,
-        rot: 0,
-        visible: true
-      },
-      {
-        id: 'B',
-        shape: 'triangle',
-        x: posB.x,
-        y: posB.y,
-        rot: 0,
-        visible: visibleB
-      }
+function genLevel3(rng){
+  const c2Letters=['D','D','C','B','A','A']; const c2Rows=[2,1,1,1,1,2];
+  const c1Letters=['C','C','B','B','C','C']; const c1Rows=[3,4,4,3,2,3];
+  const sheets=[];
+  for(let i=0;i<6;i++){
+    const c1col = clampLetterToAtoD(c1Letters[i]);
+    const c2col = clampLetterToAtoD(c2Letters[i]);
+    sheets.push([
+      { id:'A', shape:'hex', x:letterToX(c1col), y:clamp(c1Rows[i]-1,0,3), rot:0, visible:true, color:(i%2===0?'black':'hotpink') },
+      { id:'B', shape:'square', x:letterToX(c2col), y:clamp(c2Rows[i]-1,0,3), rot:0, visible:true, color:'goldenrod' },
+      { id:'C', shape:'triangle', x:1, y:1, rot: (0 + 90*i) % 360, visible:true, color:'white' }
     ]);
   }
-  
-  const nextFrames = [];
-  for (let step = 0; step < 2; step++) {
-    let nextX = posA.x + posA.dx;
-    let nextY = posA.y + posA.dy;
-    
-    if (nextX < 0 || nextX >= GRID.w) {
-      posA.dx *= -1;
-      nextX = clamp(posA.x + posA.dx, 0, GRID.w - 1);
-    }
-    if (nextY < 0 || nextY >= GRID.h) {
-      posA.dy *= -1;
-      nextY = clamp(posA.y + posA.dy, 0, GRID.h - 1);
-    }
-    
-    posA.x = nextX;
-    posA.y = nextY;
-    
-    if (posB.y === posA.y) {
-      visibleB = !visibleB;
-    }
-    
-    if ((4 + step) % 2 === 0) {
-      posB.x = clamp(posB.x + 1, 0, GRID.w - 1);
-    }
-    
-    nextFrames.push([
-      {
-        id: 'A',
-        shape: 'square',
-        x: posA.x,
-        y: posA.y,
-        rot: 0,
-        visible: true
-      },
-      {
-        id: 'B',
-        shape: 'triangle',
-        x: posB.x,
-        y: posB.y,
-        rot: 0,
-        visible: visibleB
-      }
+  return { frames: sheets.slice(0,4).map(s=>ensureUniquePositions(s)), correct:[ensureUniquePositions(sheets[4]), ensureUniquePositions(sheets[5])], ruleText:"Zorluk 3: Çoklu cisimler. cisim3 her sheet'te +90°." };
+}
+
+function genLevel4(rng){
+  const c1Letters=['D','C','C','A','C','B']; const c1Rows=[1,2,3,4,3,3];
+  const c2Letters=['C','B','B','C','C','B']; const c2Rows=[3,3,2,2,4,3];
+  const sheets=[];
+  for(let i=0;i<6;i++){
+    const c1col = clampLetterToAtoD(c1Letters[i]);
+    const c2col = clampLetterToAtoD(c2Letters[i]);
+    sheets.push([
+      { id:'A', shape:'circle', x:letterToX(c1col), y:clamp(c1Rows[i]-1,0,3), rot:0, visible:true, color:'white' },
+      { id:'B', shape:'hex', x:letterToX(c2col), y:clamp(c2Rows[i]-1,0,3), rot:0, visible:true, color:'hotpink' },
+      { id:'C', shape:'triangle', x:1, y:1, rot:(0+90*i)%360, visible:true, color:'green' }
     ]);
   }
-  
-  return {
-    frames,
-    correct: nextFrames,
-    ruleText
-  };
+  return { frames: sheets.slice(0,4).map(s=>ensureUniquePositions(s)), correct:[ensureUniquePositions(sheets[4]), ensureUniquePositions(sheets[5])], ruleText:"Zorluk 4: Bir cisim döner, diğerleri hareket eder. 4x4 grid." };
 }
 
-// Map logical shape names to glyph characters.
-// square -> arrow, triangle -> triangle, circle -> heart, hex -> club
-const SHAPE_GLYPHS = {
-  square: '➤',    // arrow-like - rotates visibly
-  triangle: '▲',
-  circle: '♥',
-  hex: '♣'
-};
-
-// Rendering glyphs instead of drawn shapes
-function renderShape(shape, rot = 0) {
-  const span = document.createElement('span');
-  span.className = `glyph ${shape}`;
-  span.textContent = SHAPE_GLYPHS[shape] || '?';
-  // Apply rotation (in degrees)
-  if (rot !== 0) {
-    span.style.transform = `rotate(${rot}deg)`;
-  } else {
-    span.style.transform = '';
+function genLevel5(rng){
+  const c1Letters=['B','C','C','D','C','B']; const c1Rows=[1,1,2,2,3,3];
+  const c2Letters=['D','D','C','B','A','A']; const c2Rows=[4,4,3,2,1,2];
+  const c3Letters=['A','A','A','A','A','A']; const c3Rows=[1,2,3,4,4,4];
+  const c4Letters=['D','D','D','D','D','D']; const c4Rows=[1,1,2,2,3,3];
+  const sheets=[];
+  for(let i=0;i<6;i++){
+    const aCol = clampLetterToAtoD(c1Letters[i]);
+    const bCol = clampLetterToAtoD(c2Letters[i]);
+    const cCol = clampLetterToAtoD(c3Letters[i]);
+    const dCol = clampLetterToAtoD(c4Letters[i]);
+    sheets.push([
+      { id:'A', shape:'hex', x:clamp(letterToX(aCol),0,3), y:clamp(c1Rows[i]-1,0,3), rot:((-90*i)%360+360)%360, visible:true, color:(i%2? 'black':'hotpink') },
+      { id:'B', shape:'square', x:clamp(letterToX(bCol),0,3), y:clamp(c2Rows[i]-1,0,3), rot:((-90*i)%360+360)%360, visible:true, color:(i%2? 'yellow':'white') },
+      { id:'C', shape:'triangle', x:clamp(letterToX(cCol),0,3), y:clamp(c3Rows[i]-1,0,3), rot:0, visible:true, color:'white' },
+      { id:'D', shape:'circle', x:clamp(letterToX(dCol),0,3), y:clamp(c4Rows[i]-1,0,3), rot:0, visible:true, color:'goldenrod' }
+    ]);
   }
-  return span;
+  return { frames: sheets.slice(0,4).map(s=>ensureUniquePositions(s)), correct:[ensureUniquePositions(sheets[4]), ensureUniquePositions(sheets[5])], ruleText:"Zorluk 5: Renk değişimi + negatif rotasyon. 4x4 grid." };
 }
 
-function createFrameGrid(objects) {
-  const container = document.createElement('div');
-  container.className = 'frame';
-  
-  for (let y = 0; y < GRID.h; y++) {
-    for (let x = 0; x < GRID.w; x++) {
-      const cell = document.createElement('div');
-      cell.className = 'grid-cell';
-      
-      objects.forEach(obj => {
-        if (obj.x === x && obj.y === y && obj.visible) {
-          cell.appendChild(renderShape(obj.shape, obj.rot));
-        }
-      });
-      
-      container.appendChild(cell);
-    }
+function genLevel6(rng){
+  const c1Letters=['A','B','C','D','D','D']; const c1Rows=[1,1,2,2,3,3];
+  const c2Letters=['D','D','C','B','A','A']; const c2Rows=[4,4,3,2,1,2];
+  const c3Letters=['C','C','C','C','C','C']; const c3Rows=[3,3,3,3,3,3];
+  const colorCycle=['goldenrod','green','red'];
+  const sheets=[];
+  for(let i=0;i<6;i++){
+    const c1col = clampLetterToAtoD(c1Letters[i]);
+    const c2col = clampLetterToAtoD(c2Letters[i]);
+    const c3col = clampLetterToAtoD(c3Letters[i]);
+    const c1color = (i%3===0?'red':(i%3===1?'darkred':'orangered'));
+    const c4color = colorCycle[i % colorCycle.length];
+    sheets.push([
+      { id:'A', shape:'square', x:clamp(letterToX(c1col),0,3), y:clamp(c1Rows[i]-1,0,3), rot:(i*90)%360, visible:true, color:c1color },
+      { id:'B', shape:'triangle', x:clamp(letterToX(c2col),0,3), y:clamp(c2Rows[i]-1,0,3), rot:((-90*i)%360+360)%360, visible:true, color:'white' },
+      { id:'C', shape:'circle', x:clamp(letterToX(c3col),0,3), y:clamp(c3Rows[i]-1,0,3), rot:0, visible:true, color:'white' },
+      { id:'D', shape:'hex', x:clamp(1 + (i%2),0,3), y:clamp(0 + Math.floor(i/2),0,3), rot:(90*i)%360, visible:true, color:c4color }
+    ]);
   }
-  
-  return container;
+  return { frames: sheets.slice(0,4).map(s=>ensureUniquePositions(s)), correct:[ensureUniquePositions(sheets[4]), ensureUniquePositions(sheets[5])], ruleText:"Zorluk 6: Karmaşık renk/rotasyon kombinasyonları. 4x4 grid." };
 }
 
-function createPlaceholder(index) {
-  const placeholder = document.createElement('div');
-  placeholder.className = 'placeholder';
-  placeholder.dataset.index = index;
-  placeholder.innerHTML = '<div style="font-size: 24px; color: #777;">?</div>';
-  
-  placeholder.addEventListener('click', () => {
-    if (currentState.selectedOption !== null) {
-      placeOptionInBlank(currentState.selectedOption, index);
-    }
+function genQuestionFor(level, rng){
+  switch(level){
+    case 'easy': return genLevel1(rng);
+    case 'medium': return genLevel2(rng);
+    case 'hard': return genLevel3(rng);
+    case 'veryhard': return genLevel4(rng);
+    case 'expert': return genLevel5(rng);
+    case 'master': return genLevel6(rng);
+    default: return genLevel1(rng);
+  }
+}
+
+// Build options ensuring both correct frames present exactly once and unique
+function buildOptionsEnsuringCorrectPresence(question, rng){
+  const targetOptions = 6;
+  const uniqueMap = new Map();
+  question.correct.forEach(cf=>{
+    const k = frameKey(cf);
+    if(!uniqueMap.has(k) && isValidFrame(cf)) uniqueMap.set(k, deepCopy(cf));
   });
-  
-  return placeholder;
-}
 
-function createOptionGrid(objects, index) {
-  const option = document.createElement('div');
-  option.className = 'option';
-  option.dataset.index = index;
-  
-  for (let y = 0; y < GRID.h; y++) {
-    for (let x = 0; x < GRID.w; x++) {
-      const cell = document.createElement('div');
-      cell.className = 'grid-cell';
-      
-      objects.forEach(obj => {
-        if (obj.x === x && obj.y === y && obj.visible) {
-          cell.appendChild(renderShape(obj.shape, obj.rot));
-        }
-      });
-      
-      option.appendChild(cell);
+  let attempts = 0;
+  while(uniqueMap.size < targetOptions && attempts < 400){
+    attempts++;
+    const base = deepCopy(choose(question.correct, rng));
+    const distractors = makeDistractorsForFrame(base, rng, 4);
+    for(const d of distractors){
+      if(uniqueMap.size >= targetOptions) break;
+      const dk = frameKey(d);
+      const equalsAnyCorrect = question.correct.some(cf => eqObjects(cf, d));
+      if(equalsAnyCorrect) continue;
+      if(!uniqueMap.has(dk) && isValidFrame(d, base.length)) uniqueMap.set(dk, d);
     }
   }
-  
-  option.addEventListener('click', () => {
-    // Remove selection from other options
-    document.querySelectorAll('.option').forEach(opt => {
-      opt.classList.remove('selected');
-    });
-    
-    option.classList.add('selected');
-    currentState.selectedOption = index;
+
+  attempts = 0;
+  while(uniqueMap.size < targetOptions && attempts < 400){
+    attempts++;
+    const base = deepCopy(choose(question.correct, rng));
+    const candidate = base.map(o=>({
+      ...o,
+      x: clamp(o.x + Math.floor(rng()*3) - 1, 0, GRID.w-1),
+      y: clamp(o.y + Math.floor(rng()*3) - 1, 0, GRID.h-1),
+      rot: ((o.rot || 0) + 90 * Math.floor(rng()*4)) % 360,
+      color: o.color || ''
+    }));
+    const ck = frameKey(candidate);
+    const equalsAnyCorrect = question.correct.some(cf => eqObjects(cf, candidate));
+    if(!equalsAnyCorrect && !uniqueMap.has(ck) && isValidFrame(candidate, base.length)) uniqueMap.set(ck, candidate);
+  }
+
+  question.correct.forEach(cf=>{
+    const k = frameKey(cf);
+    if(!uniqueMap.has(k) && isValidFrame(cf)) uniqueMap.set(k, deepCopy(cf));
   });
-  
-  return option;
+
+  const arr = Array.from(uniqueMap.values());
+  attempts = 0;
+  while(arr.length < targetOptions && attempts < 200){
+    attempts++;
+    const base = deepCopy(choose(arr, rng));
+    const candidate = base.map(o=>({
+      ...o,
+      x: clamp(o.x + choose([-1,0,1], rng), 0, GRID.w-1),
+      y: clamp(o.y + choose([-1,0,1], rng), 0, GRID.h-1),
+      rot: (o.rot||0) + 90*Math.floor(rng()*4)
+    }));
+    if(isValidFrame(candidate) && !arr.some(a=>eqObjects(a,candidate)) && !question.correct.some(cf=>eqObjects(cf,candidate))) arr.push(candidate);
+  }
+
+  for(let i=arr.length-1;i>0;i--){
+    const j = Math.floor(rng()*(i+1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr;
 }
 
-// Game state
-let currentState = {
-  level: 'easy',
-  frames: [],
-  correct: [],
-  options: [],
-  ruleText: '',
-  selectedOption: null,
-  placedAnswers: []
-};
-
-// DOM elements
+// --- State & glue ---
+let currentState = { level:'easy', frames:[], correct:[], options:[], ruleText:'', selectedOption:null, placedAnswers:[] };
 const framesWrap = document.getElementById('framesWrap');
 const optionsWrap = document.getElementById('optionsWrap');
 const ruleTextEl = document.getElementById('ruleText');
 const resultEl = document.getElementById('result');
 
-// Load new question (ensuring uniqueness / validity of options)
-function loadNewQuestion() {
+function loadNewQuestion(){
   const level = document.getElementById('difficulty').value;
   const seedVal = document.getElementById('seed').value;
   const rng = makeRng(seedVal || Date.now());
-  
-  let question;
-  switch (level) {
-    case 'easy':
-      question = genEasy(rng);
-      break;
-    case 'medium':
-      question = genMedium(rng);
-      break;
-    case 'hard':
-      question = genHard(rng);
-      break;
-    case 'veryhard':
-      question = genVeryHard(rng);
-      break;
-    default:
-      question = genEasy(rng);
+  const question = genQuestionFor(level, rng);
+  if(!question || !question.frames || !question.correct || question.correct.length === 0){
+    const q = genLevel1(rng);
+    currentState.frames = q.frames; currentState.correct = q.correct; currentState.ruleText = q.ruleText;
+  } else {
+    currentState.frames = question.frames;
+    currentState.correct = question.correct;
+    currentState.ruleText = question.ruleText;
   }
-  
-  if (!question || !question.frames || !question.correct || question.correct.length === 0) {
-    question = genEasy(rng);
-  }
-  
-  // Build options ensuring uniqueness, none empty, and each correct frame appears exactly once
-  const targetOptionsCount = 6;
-  const options = [];
-
-  // Add each correct frame once (if valid)
-  question.correct.forEach(correctFrame => {
-    if (isValidFrame(correctFrame) && !options.some(o => eqObjects(o, correctFrame))) {
-      options.push(deepCopy(correctFrame));
+  currentState.correct = currentState.correct.map(cf => ensureUniquePositions(cf));
+  currentState.options = buildOptionsEnsuringCorrectPresence(currentState, rng).map(f => ensureUniquePositions(f));
+  currentState.correct.forEach(cf=>{
+    if(!currentState.options.some(o=>eqObjects(o, cf))){
+      currentState.options.unshift(deepCopy(cf));
     }
   });
-
-  // Ensure we have at least one correct option (safety)
-  if (options.length === 0 && question.correct.length > 0 && isValidFrame(question.correct[0])) {
-    options.push(deepCopy(question.correct[0]));
-  }
-
-  // Fill with distractors while preserving object counts of the frames they are based on.
-  let attempts = 0;
-  while (options.length < targetOptionsCount && attempts < 200) {
-    attempts++;
-    // base from a random correct frame (so distractor complexity matches difficulty)
-    const base = deepCopy(choose(question.correct, rng));
-    const expectedCount = base.length;
-    const distractors = makeDistractorsForFrame(base, rng, 3);
-    for (const d of distractors) {
-      if (options.length >= targetOptionsCount) break;
-      // don't add duplicates and don't accidentally add a correct frame (should not equal any correct)
-      const equalsAnyCorrect = question.correct.some(cf => eqObjects(cf, d));
-      const equalsAnyOption = options.some(o => eqObjects(o, d));
-      if (!equalsAnyCorrect && !equalsAnyOption && isValidFrame(d, expectedCount)) {
-        options.push(d);
-      }
-    }
-  }
-
-  // Final fallback: create randomized variations that respect expected object count and are valid
-  attempts = 0;
-  while (options.length < targetOptionsCount && attempts < 200) {
-    attempts++;
-    const base = deepCopy(choose(question.correct, rng));
-    const expectedCount = base.length;
-    const rand = base.map(obj => {
-      return {
-        ...obj,
-        x: clamp(obj.x + Math.floor(rng()*3)-1, 0, GRID.w-1),
-        y: clamp(obj.y + Math.floor(rng()*3)-1, 0, GRID.h-1),
-        rot: ((obj.rot || 0) + (90 * Math.floor(rng()*4))) % 360,
-        visible: (rng() > 0.1) ? true : (obj.visible === false ? false : true)
-      };
-    });
-    const equalsAnyCorrect = question.correct.some(cf => eqObjects(cf, rand));
-    const equalsAnyOption = options.some(o => eqObjects(o, rand));
-    if (!equalsAnyCorrect && !equalsAnyOption && isValidFrame(rand, expectedCount)) {
-      options.push(rand);
-    }
-  }
-
-  // Ensure uniqueness
-  const uniqueOptions = [];
-  options.forEach(o => {
-    if (!uniqueOptions.some(u => eqObjects(u, o))) uniqueOptions.push(o);
+  const unique = [];
+  currentState.options.forEach(o=>{
+    if(!unique.some(u=>eqObjects(u,o))) unique.push(o);
   });
-
-  // Ensure correct frames are present
-  question.correct.forEach(cf => {
-    if (!uniqueOptions.some(u => eqObjects(u, cf)) && isValidFrame(cf)) {
-      uniqueOptions.unshift(deepCopy(cf));
-    }
-  });
-
-  // Trim/pad to targetOptionsCount deterministically by cloning valid variations (rare)
-  attempts = 0;
-  while (uniqueOptions.length > targetOptionsCount) uniqueOptions.pop();
-  while (uniqueOptions.length < targetOptionsCount && attempts < 50) {
-    attempts++;
-    const base = deepCopy(choose(uniqueOptions, rng));
-    const candidate = base.map(obj => ({
-      ...obj,
-      x: clamp(obj.x + choose([-1, 0, 1], rng), 0, GRID.w-1),
-      y: clamp(obj.y + choose([-1, 0, 1], rng), 0, GRID.h-1),
-      rot: ((obj.rot || 0) + 90 * Math.floor(rng()*4)) % 360
-    }));
-    if (isValidFrame(candidate) && !uniqueOptions.some(u => eqObjects(u, candidate)) &&
-        !question.correct.some(cf => eqObjects(cf, candidate))) {
-      uniqueOptions.push(candidate);
-    }
-  }
-
-  // Shuffle options
-  for (let i = uniqueOptions.length - 1; i > 0; i--) {
-    const j = Math.floor(rng() * (i + 1));
-    [uniqueOptions[i], uniqueOptions[j]] = [uniqueOptions[j], uniqueOptions[i]];
-  }
-
-  currentState = {
-    level,
-    frames: question.frames,
-    correct: question.correct,
-    options: uniqueOptions,
-    ruleText: question.ruleText,
-    selectedOption: null,
-    placedAnswers: new Array(question.correct.length).fill(null)
-  };
-  
+  currentState.options = unique.slice(0,6);
+  currentState.level = level;
+  currentState.selectedOption = null;
+  currentState.placedAnswers = new Array(currentState.correct.length).fill(null);
   renderQuestion();
 }
 
-function renderQuestion() {
+function renderQuestion(){
   framesWrap.innerHTML = '';
   optionsWrap.innerHTML = '';
-  
-  // Render frames (sequence) side-by-side
-  currentState.frames.forEach(frame => {
-    framesWrap.appendChild(createFrameGrid(frame));
-  });
-  
-  // Render placeholders (inline)
-  currentState.placedAnswers.forEach((_, index) => {
-    framesWrap.appendChild(createPlaceholder(index));
-  });
-  
-  // Render options
-  currentState.options.forEach((option, index) => {
-    optionsWrap.appendChild(createOptionGrid(option, index));
-  });
-  
+  currentState.frames.forEach(frame => framesWrap.appendChild(createFrameGrid(frame)));
+  currentState.placedAnswers.forEach((_,i)=> framesWrap.appendChild(createPlaceholder(i)));
+  currentState.options.forEach((opt,i)=> optionsWrap.appendChild(createOptionGrid(opt,i)));
   ruleTextEl.textContent = currentState.ruleText;
   resultEl.textContent = '';
   resultEl.style.color = '';
 }
 
-function placeOptionInBlank(optionIndex, blankIndex) {
+function placeOptionInBlank(optionIndex, blankIndex){
   currentState.placedAnswers[blankIndex] = deepCopy(currentState.options[optionIndex]);
   updatePlaceholders();
 }
 
-function updatePlaceholders() {
+function updatePlaceholders(){
   const placeholders = framesWrap.querySelectorAll('.placeholder');
-  
-  placeholders.forEach((placeholder, index) => {
-    const answer = currentState.placedAnswers[index];
-    
-    if (answer) {
-      placeholder.innerHTML = '';
-      const frm = createFrameGrid(answer);
-      frm.style.border = 'none';
-      frm.style.padding = '0';
-      placeholder.appendChild(frm);
-      placeholder.style.border = '3px solid #4CAF50';
-      placeholder.style.background = '#f0fff0';
+  placeholders.forEach((ph, idx)=>{
+    const answer = currentState.placedAnswers[idx];
+    if(answer){
+      ph.innerHTML = '';
+      const inner = createFrameGrid(answer);
+      inner.style.border = 'none';
+      inner.style.padding = '0';
+      ph.appendChild(inner);
+      ph.style.border = '3px solid #4CAF50';
+      ph.style.background = '#f0fff0';
     } else {
-      placeholder.innerHTML = '<div style="font-size: 24px; color: #777;">?</div>';
-      placeholder.style.border = '3px dashed #bbb';
-      placeholder.style.background = '#fafafa';
+      ph.innerHTML = '<div style="font-size:24px;color:#777;">?</div>';
+      ph.style.border = '3px dashed #bbb';
+      ph.style.background = '#fafafa';
     }
   });
 }
 
-// Check answer
-document.getElementById('checkBtn').addEventListener('click', () => {
-  const allFilled = currentState.placedAnswers.every(answer => answer !== null);
-  
-  if (!allFilled) {
-    resultEl.textContent = 'Lütfen tüm boşlukları doldurun.';
-    resultEl.style.color = '#f44336';
-    return;
-  }
-  
+// Check
+document.getElementById('checkBtn').addEventListener('click', ()=>{
+  const allFilled = currentState.placedAnswers.every(a => a !== null);
+  if(!allFilled){ resultEl.textContent = 'Lütfen tüm boşlukları doldurun.'; resultEl.style.color = '#f44336'; return; }
   let allCorrect = true;
-  for (let i = 0; i < currentState.correct.length; i++) {
-    if (!eqObjects(currentState.placedAnswers[i], currentState.correct[i])) {
-      allCorrect = false;
-      break;
-    }
+  for(let i=0;i<currentState.correct.length;i++){
+    if(!eqObjects(currentState.placedAnswers[i], currentState.correct[i])){ allCorrect = false; break; }
   }
-  
-  if (allCorrect) {
-    resultEl.textContent = '✅ Tebrikler! Doğru cevap.';
-    resultEl.style.color = '#4CAF50';
-  } else {
-    resultEl.textContent = '❌ Yanlış cevap. Tekrar deneyin veya "Açıkla" butonuna basın.';
-    resultEl.style.color = '#f44336';
-  }
+  if(allCorrect){ resultEl.textContent = '✅ Tebrikler! Doğru cevap.'; resultEl.style.color = '#4CAF50'; }
+  else { resultEl.textContent = '❌ Yanlış cevap. Tekrar deneyin veya "Açıkla" butonuna basın.'; resultEl.style.color = '#f44336'; }
 });
 
-// Explain button
-document.getElementById('explainBtn').addEventListener('click', () => {
+// Explain
+document.getElementById('explainBtn').addEventListener('click', ()=>{
   currentState.placedAnswers = deepCopy(currentState.correct);
   updatePlaceholders();
   resultEl.textContent = 'Doğru cevaplar gösterildi. Kural: ' + currentState.ruleText;
   resultEl.style.color = '#2196F3';
 });
 
-// Event listeners
+// Events
 document.getElementById('newBtn').addEventListener('click', loadNewQuestion);
 document.getElementById('difficulty').addEventListener('change', loadNewQuestion);
 
-// Initial load
+// Initial
 loadNewQuestion();
+
 </script>
 </body>
 </html>
